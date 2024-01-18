@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package app.simplecloud.controller.shared.proto;
+
+option java_package = "app.simplecloud.controller.shared.proto";
+option java_multiple_files = true;
+
+message GroupDefinition {
+  string name = 1;
+}
