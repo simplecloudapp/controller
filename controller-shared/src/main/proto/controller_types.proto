@@ -7,4 +7,38 @@ option java_multiple_files = true;
 
 message GroupDefinition {
   string name = 1;
+  string template_name = 2;
+  uint64 minimum_memory = 3;
+  uint64 maximum_memory = 4;
+  uint64 start_port = 5;
+  uint64 minimum_online_count = 6;
+  uint64 maximum_online_count = 7;
+  map<string, string> properties = 8;
+}
+
+message ServerDefinition {
+  string unique_id = 1;
+  string groupName = 2;
+  uint32 numerical_id = 3;
+  string template_name = 4;
+  uint64 port = 5;
+  uint64 minimum_memory = 6;
+  uint64 maximum_memory = 7;
+  uint64 player_count = 8;
+  map<string, string> properties = 9;
+  ServerState state = 10;
+  ServerAllocationState allocation_state = 11;
+}
+
+enum ServerState {
+  UNKNOWN = 0;
+  STARTING = 1;
+  RUNNING = 2;
+  STOPPING = 3;
+  STOPPED = 4;
+}
+
+enum ServerAllocationState {
+  ALLOCATED = 0;
+  UNALLOCATED = 1;
 }
