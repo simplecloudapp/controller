@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package app.simplecloud.controller.shared.proto;
+
+option java_package = "app.simplecloud.controller.shared.proto";
+option java_multiple_files = true;
+
+import "controller_types.proto";
+
+message GroupNameRequest {
+  string name = 1;
+}
+
+message ServerIdRequest {
+  string id = 1;
+}
+
+message GetServersByGroupResponse {
+  repeated ServerDefinition servers = 1;
+}
+
+service ControllerServerService {
+  rpc getServersByGroup(GroupNameRequest) returns (GetServersByGroupResponse);
+  rpc getServerById(ServerIdRequest) returns (ServerDefinition);
+  rpc startServer(GroupNameRequest) returns (ServerDefinition);
+  rpc stopServer(ServerIdRequest) returns (StatusResponse);
+}

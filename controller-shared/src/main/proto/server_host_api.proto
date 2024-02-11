@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package app.simplecloud.controller.shared.proto;
+
+option java_package = "app.simplecloud.controller.shared.proto";
+option java_multiple_files = true;
+
+import "controller_types.proto";
+import "controller_server_api.proto";
+
+service ServerHostService {
+  rpc startServer(ServerDefinition) returns (StatusResponse);
+  rpc stopServer(ServerIdRequest) returns (StatusResponse);
+}

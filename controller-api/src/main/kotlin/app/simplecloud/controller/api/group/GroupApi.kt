@@ -1,15 +1,12 @@
-package app.simplecloud.controller.api
+package app.simplecloud.controller.api.group
 
 import app.simplecloud.controller.shared.group.Group
 import java.util.concurrent.CompletableFuture
 
-interface ControllerApi {
-
+interface GroupApi {
     /**
-     * NOTE: This may be moved to a separate api file.
      * @param name the name of the group.
-     * @returns a [CompletableFuture] with the [Group].
+     * @return a [CompletableFuture] with the [Group].
      */
     fun getGroupByName(name: String): CompletableFuture<Group>
-
 }
