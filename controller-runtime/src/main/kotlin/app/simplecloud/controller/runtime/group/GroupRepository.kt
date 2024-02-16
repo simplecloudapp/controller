@@ -1,15 +1,17 @@
 package app.simplecloud.controller.runtime.group
 
+import app.simplecloud.controller.runtime.Repository
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.proto.GroupDefinition
 
-class GroupRepository {
-
-    // TODO: Load groups from file
-    private val groups = listOf<Group>()
+class GroupRepository : Repository<Group>() {
 
     fun findGroupByName(name: String): GroupDefinition? {
-        return groups.firstOrNull { it.name == name }?.toDefinition()
+        return firstOrNull { it.name == name }?.toDefinition()
+    }
+
+    override fun load() {
+        TODO("Not yet implemented")
     }
 
 }
