@@ -6,21 +6,22 @@
 CREATE TYPE cloud_server_state AS ENUM('starting', 'available', 'ingame', 'stopping');
 
 CREATE TABLE IF NOT EXISTS cloud_servers(
-    unique_id text NOT NULL,
-    group_name text NOT NULL,
-    host_id text NOT NULL,
+    unique_id varchar NOT NULL,
+    group_name varchar NOT NULL,
+    host_id varchar NOT NULL,
     numerical_id int NOT NULL,
-    template_id text NOT NULL,
+    template_id varchar NOT NULL,
     port int NOT NULL,
     minimum_memory int NOT NULL,
     maximum_memory int NOT NULL,
     player_count int NOT NULL,
-    name text NOT NULL,
+    name varchar NOT NULL,
     state cloud_server_state NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS cloud_server_properties(
-    server_id text NOT NULL,
-    key text NOT NULL,
-    value text
+    server_id varchar NOT NULL,
+    key varchar NOT NULL,
+    value varchar,
+    CONSTRAINT compound_key PRIMARY KEY (server_id, key)
 );

@@ -27,6 +27,11 @@ sourceSets {
                 "build/generated/source/db/main/java",
             )
         }
+        resources {
+            srcDirs(
+                "src/main/db"
+            )
+        }
     }
 }
 
@@ -60,7 +65,7 @@ jooq {
         generator {
             target {
                 directory = "build/generated/source/db/main/java"
-                packageName = "app.simplecloud.db"
+                packageName = "app.simplecloud.controller.shared.db"
             }
             database {
                 name = "org.jooq.meta.extensions.ddl.DDLDatabase"
