@@ -14,6 +14,10 @@ class Database {
             instance = DSL.using(connection, dialect)
         }
 
+        fun init(url: String, username: String, password: String) {
+            instance = DSL.using(url, username, password)
+        }
+
         fun get(): DSLContext {
             return instance
         }

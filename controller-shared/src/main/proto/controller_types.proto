@@ -18,10 +18,10 @@ message GroupDefinition {
 
 message ServerDefinition {
   string unique_id = 1;
-  string groupName = 2;
+  string group_name = 2;
   string host_id = 3;
   uint32 numerical_id = 4;
-  string template_name = 5;
+  string template_id = 5;
   uint64 port = 6;
   uint64 minimum_memory = 7;
   uint64 maximum_memory = 8;

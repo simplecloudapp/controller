@@ -24,6 +24,7 @@ sourceSets {
             srcDirs(
                 "build/generated/source/proto/main/grpc",
                 "build/generated/source/proto/main/java",
+                "build/generated/source/db/main/java",
             )
         }
     }
@@ -57,6 +58,10 @@ protobuf {
 jooq {
     configuration {
         generator {
+            target {
+                directory = "build/generated/source/db/main/java"
+                packageName = "app.simplecloud.db"
+            }
             database {
                 name = "org.jooq.meta.extensions.ddl.DDLDatabase"
                 properties {
