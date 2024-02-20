@@ -1,21 +1,27 @@
 package app.simplecloud.controller.shared.db
 
 import org.jooq.DSLContext
-import org.jooq.SQLDialect
 import org.jooq.impl.DSL
-import java.sql.Connection
 
 
 class Database {
     companion object {
         @JvmStatic
         private lateinit var instance: DSLContext
-        fun init(connection: Connection, dialect: SQLDialect = SQLDialect.SQLITE) {
-            instance = DSL.using(connection, dialect)
+        fun init(config: DatabaseConfig) {
+            instance = DSL.using(config.toDatabaseUrl())
+            setup()
         }
 
-        fun init(url: String, username: String, password: String) {
-            instance = DSL.using(url, username, password)
+        private fun setup() {
+            val setupInputStream = Database::class.java.getResourceAsStream("/schema.sql")
+                    ?: throw IllegalArgumentException("Database schema not found.")
+            val setupCommands = setupInputStream.bufferedReader().use { it.readText() }.split(";")
+            setupCommands.forEach {
+                val trimmed = it.trim()
+                if (trimmed.isNotEmpty())
+                    instance.execute(DSL.sql(trimmed))
+            }
         }
 
         fun get(): DSLContext {

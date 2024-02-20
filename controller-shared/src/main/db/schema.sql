@@ -3,8 +3,6 @@
   Execute jooqCodegen to create java classes for these files.
  */
 
-CREATE TYPE cloud_server_state AS ENUM('starting', 'available', 'ingame', 'stopping');
-
 CREATE TABLE IF NOT EXISTS cloud_servers(
     unique_id varchar NOT NULL,
     group_name varchar NOT NULL,
@@ -16,7 +14,7 @@ CREATE TABLE IF NOT EXISTS cloud_servers(
     maximum_memory int NOT NULL,
     player_count int NOT NULL,
     name varchar NOT NULL,
-    state cloud_server_state NOT NULL
+    state int NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS cloud_server_properties(

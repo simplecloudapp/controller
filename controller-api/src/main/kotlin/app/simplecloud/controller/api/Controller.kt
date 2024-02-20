@@ -17,7 +17,7 @@ class Controller {
         lateinit var serverApi: ServerApi
             private set
 
-        fun init(){
+        fun connect() {
             initGroupApi(GroupApiImpl())
             initServerApi(ServerApiImpl())
         }

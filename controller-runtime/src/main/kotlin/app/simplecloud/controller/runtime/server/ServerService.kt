@@ -44,6 +44,7 @@ class ServerService(
         val server = Server.create(Group.fromDefinition(groupDefinition), host).toDefinition()
         stub.startServer(server).toCompletable().thenApply {
             if (it.status.equals("200")) {
+                serverRepository.save(Server.fromDefinition(server))
                 responseObserver.onNext(server)
                 responseObserver.onCompleted()
             } else {
@@ -67,6 +68,9 @@ class ServerService(
         }
         val stub = ServerHostServiceGrpc.newFutureStub(host.getEndpoint())
         stub.stopServer(request).toCompletable().thenApply {
+            if (it.status == "success") {
+                serverRepository.delete(Server.fromDefinition(server))
+            }
             responseObserver.onNext(it)
             responseObserver.onCompleted()
         }

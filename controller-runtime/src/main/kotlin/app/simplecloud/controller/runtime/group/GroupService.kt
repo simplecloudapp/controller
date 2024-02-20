@@ -6,17 +6,17 @@ import app.simplecloud.controller.shared.proto.GetGroupByNameResponse
 import io.grpc.stub.StreamObserver
 
 class GroupService(
-    private val groupRepository: GroupRepository
+        private val groupRepository: GroupRepository
 ) : ControllerGroupServiceGrpc.ControllerGroupServiceImplBase() {
 
     override fun getGroupByName(
-        request: GetGroupByNameRequest,
-        responseObserver: StreamObserver<GetGroupByNameResponse>
+            request: GetGroupByNameRequest,
+            responseObserver: StreamObserver<GetGroupByNameResponse>
     ) {
         val group = groupRepository.findGroupByName(request.name)
         val response = GetGroupByNameResponse.newBuilder()
-            .setGroup(group)
-            .build()
+                .setGroup(group)
+                .build()
 
         responseObserver.onNext(response)
         responseObserver.onCompleted()

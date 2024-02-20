@@ -9,6 +9,9 @@ dependencies {
     api(rootProject.libs.bundles.proto)
     api("org.jooq:jooq:3.19.3")
     api("org.jooq:jooq-meta:3.19.3")
+    api("org.spongepowered:configurate-yaml:4.0.0")
+    api("org.spongepowered:configurate-extra-kotlin:4.1.2")
+    api("org.xerial:sqlite-jdbc:3.44.1.0")
     jooqCodegen("org.jooq:jooq-meta-extensions:3.19.3")
 }
 
