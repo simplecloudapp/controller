@@ -1,1 +1,2 @@
-url: file:///db.sqlite
+driver: 'jdbc:sqlite'
+url: '/database.db'

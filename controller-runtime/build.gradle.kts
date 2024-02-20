@@ -8,5 +8,6 @@ dependencies {
 }
 
 application {
-    mainClass.set("app.simplecloud.controller.runtime.launcher.LauncherKt")
+    mainClass.set("app.simplecloud.controller.runtime.launcher.LauncherKtKt")
 }
+

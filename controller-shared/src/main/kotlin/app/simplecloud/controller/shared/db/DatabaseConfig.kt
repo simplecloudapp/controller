@@ -6,7 +6,10 @@ import org.spongepowered.configurate.objectmapping.ConfigSerializable
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import kotlin.io.path.copyToRecursively
+import kotlin.io.path.createDirectories
 
 @ConfigSerializable
 data class DatabaseConfig(var driver: String = "jdbc:sqlite", var url: String) {
@@ -17,8 +20,7 @@ data class DatabaseConfig(var driver: String = "jdbc:sqlite", var url: String) {
             }
             val destination = File(path.substring(1, path.length))
             if (!destination.exists()) {
-                if (!destination.parentFile.exists())
-                    destination.parentFile.mkdirs()
+                Files.createDirectories(destination.toPath())
                 destination.createNewFile()
                 Files.copy(DatabaseConfig::class.java.getResourceAsStream(path)!!, destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
             }
