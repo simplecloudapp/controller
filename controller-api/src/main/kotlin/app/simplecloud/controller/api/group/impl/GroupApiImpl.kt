@@ -6,6 +6,7 @@ import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.proto.ControllerGroupServiceGrpc
 import app.simplecloud.controller.shared.proto.GetGroupByNameRequest
+import app.simplecloud.controller.shared.status.ApiResponse
 import java.util.concurrent.CompletableFuture
 
 class GroupApiImpl : GroupApi {
@@ -23,6 +24,26 @@ class GroupApiImpl : GroupApi {
         ).toCompletable()
                 .thenApply {
                     Group.fromDefinition(it.group)
+                }
+    }
+
+    override fun deleteGroup(name: String): CompletableFuture<ApiResponse> {
+        return groupServiceStub.deleteGroupByName(
+                GetGroupByNameRequest.newBuilder()
+                        .setName(name)
+                        .build()
+        ).toCompletable()
+                .thenApply {
+                    ApiResponse.fromDefinition(it)
+                }
+    }
+
+    override fun createGroup(group: Group): CompletableFuture<ApiResponse> {
+        return groupServiceStub.createGroup(
+                group.toDefinition()
+        ).toCompletable()
+                .thenApply {
+                    ApiResponse.fromDefinition(it)
                 }
     }
 

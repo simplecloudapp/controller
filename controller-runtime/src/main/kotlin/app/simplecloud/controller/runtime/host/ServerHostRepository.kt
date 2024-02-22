@@ -1,11 +1,11 @@
 package app.simplecloud.controller.runtime.host
 
-import app.simplecloud.controller.runtime.Repository
+import app.simplecloud.controller.runtime.YamlRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.shared.host.ServerHost
-import java.util.concurrent.CompletableFuture
+import java.io.File
 
-class ServerHostRepository : Repository<ServerHost>() {
+class ServerHostRepository(path: String) : YamlRepository<ServerHost>(path) {
 
     fun findServerHostById(id: String): ServerHost? {
         return firstOrNull { it.getId() == id }
@@ -24,16 +24,9 @@ class ServerHostRepository : Repository<ServerHost>() {
         return lastHost
     }
 
-    override fun load() {
-        TODO("Not yet implemented")
+    override fun findIndex(element: ServerHost): Int {
+        return indexOf(firstOrNull { it.getId() == element.getId() })
     }
 
-    override fun delete(element: ServerHost): CompletableFuture<Boolean> {
-        throw UnsupportedOperationException("delete is not available on this repository")
-    }
-
-    override fun save(element: ServerHost) {
-        throw UnsupportedOperationException("delete is not available on this repository")
-    }
 }
 

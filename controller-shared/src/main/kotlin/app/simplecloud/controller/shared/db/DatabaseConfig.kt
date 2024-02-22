@@ -20,8 +20,6 @@ data class DatabaseConfig(var driver: String = "jdbc:sqlite", var url: String) {
             }
             val destination = File(path.substring(1, path.length))
             if (!destination.exists()) {
-                Files.createDirectories(destination.toPath())
-                destination.createNewFile()
                 Files.copy(DatabaseConfig::class.java.getResourceAsStream(path)!!, destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
             }
             val loader = YamlConfigurationLoader.builder()

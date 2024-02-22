@@ -1,27 +1,18 @@
 package app.simplecloud.controller.runtime.group
 
-import app.simplecloud.controller.runtime.Repository
+import app.simplecloud.controller.runtime.YamlRepository
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.proto.GroupDefinition
-import java.util.concurrent.CompletableFuture
 
-class GroupRepository : Repository<Group>() {
+class GroupRepository(path: String) : YamlRepository<Group>(path) {
 
     fun findGroupByName(name: String): GroupDefinition? {
         return firstOrNull { it.name == name }?.toDefinition()
     }
 
-    override fun load() {
-        TODO("Not yet implemented")
+    override fun findIndex(element: Group): Int {
+        return indexOf(firstOrNull { it.name == element.name })
     }
 
-    override fun delete(element: Group): CompletableFuture<Boolean> {
-        throw UnsupportedOperationException("delete is not available on this repository")
-    }
-
-
-    override fun save(element: Group) {
-        throw UnsupportedOperationException("delete is not available on this repository")
-    }
 
 }

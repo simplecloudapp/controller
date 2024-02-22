@@ -17,4 +17,6 @@ message GetGroupByNameResponse {
 
 service ControllerGroupService {
   rpc getGroupByName(GetGroupByNameRequest) returns (GetGroupByNameResponse);
+  rpc deleteGroupByName(GetGroupByNameRequest) returns (StatusResponse);
+  rpc createGroup(GroupDefinition) returns (StatusResponse);
 }

@@ -10,15 +10,16 @@ import app.simplecloud.controller.shared.db.Database
 import io.grpc.Server
 import io.grpc.ServerBuilder
 import org.apache.logging.log4j.LogManager
+import java.io.File
 import kotlin.concurrent.thread
 
 class ControllerRuntime {
 
     private val logger = LogManager.getLogger(ControllerRuntime::class.java)
 
-    private val groupRepository: GroupRepository = GroupRepository()
+    private val groupRepository: GroupRepository = GroupRepository("/groups.yml")
     private var serverRepository: ServerRepository? = null
-    private val hostRepository: ServerHostRepository = ServerHostRepository()
+    private val hostRepository: ServerHostRepository = ServerHostRepository("/hosts.yml")
     private var databaseConfig: DatabaseConfig? = null
 
     private var server: Server? = null
