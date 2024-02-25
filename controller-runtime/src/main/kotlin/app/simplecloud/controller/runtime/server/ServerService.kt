@@ -34,7 +34,7 @@ class ServerService(
             responseObserver.onCompleted()
             return;
         }
-        val stub = ServerHostServiceGrpc.newFutureStub(host.getEndpoint())
+        val stub = ServerHostServiceGrpc.newFutureStub(host.endpoint)
         val groupDefinition = groupRepository.findGroupByName(request.name)
         if (groupDefinition == null) {
             responseObserver.onError(IllegalArgumentException("No group was found matching the group name."))
@@ -64,7 +64,7 @@ class ServerService(
             responseObserver.onCompleted()
             return
         }
-        val stub = ServerHostServiceGrpc.newFutureStub(host.getEndpoint())
+        val stub = ServerHostServiceGrpc.newFutureStub(host.endpoint)
         stub.stopServer(request).toCompletable().thenApply {
             if (it.status == "success") {
                 serverRepository.delete(Server.fromDefinition(server))
