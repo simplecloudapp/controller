@@ -9,6 +9,6 @@ import "controller_types.proto";
 import "controller_server_api.proto";
 
 service ServerHostService {
-  rpc startServer(ServerDefinition) returns (StatusResponse);
+  rpc startServer(GroupDefinition) returns (ServerDefinition);
   rpc stopServer(ServerIdRequest) returns (StatusResponse);
 }

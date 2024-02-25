@@ -41,15 +41,13 @@ class ServerService(
             responseObserver.onCompleted()
             return;
         }
-        val server = Server.create(Group.fromDefinition(groupDefinition), host).toDefinition()
-        stub.startServer(server).toCompletable().thenApply {
-            if (it.status.equals("200")) {
-                serverRepository.save(Server.fromDefinition(server))
-                responseObserver.onNext(server)
-                responseObserver.onCompleted()
-            } else {
-                responseObserver.onError(ServerHostException("Could not start server, aborting."))
-            }
+        stub.startServer(groupDefinition).toCompletable().thenApply {
+            serverRepository.save(Server.fromDefinition(it))
+            responseObserver.onNext(it)
+            responseObserver.onCompleted()
+        }.exceptionally {
+            responseObserver.onError(ServerHostException("Could not start server, aborting."))
+            responseObserver.onCompleted()
         }
     }
 
