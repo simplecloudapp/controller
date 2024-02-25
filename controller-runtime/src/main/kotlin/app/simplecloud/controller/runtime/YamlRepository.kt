@@ -29,6 +29,9 @@ abstract class YamlRepository<T>(path: String) : Repository<T>() {
                 }.build()
         node = loader.load()
         addAll(node.get<YamlRepositoryType<T>>()?.items ?: ArrayList())
+        forEach {
+            println(it)
+        }
     }
 
     override fun delete(element: T): CompletableFuture<Boolean> {

@@ -9,12 +9,12 @@ CREATE TABLE IF NOT EXISTS cloud_servers(
     host_id varchar NOT NULL,
     numerical_id int NOT NULL,
     template_id varchar NOT NULL,
+    ip varchar NOT NULL,
     port int NOT NULL,
     minimum_memory int NOT NULL,
     maximum_memory int NOT NULL,
     player_count int NOT NULL,
-    name varchar NOT NULL,
-    state int NOT NULL
+    state varchar NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS cloud_server_properties(

@@ -6,16 +6,15 @@ import app.simplecloud.controller.shared.host.ServerHost
 import java.io.File
 
 class ServerHostRepository(path: String) : YamlRepository<ServerHost>(path) {
-
     fun findServerHostById(id: String): ServerHost? {
-        return firstOrNull { it.getId() == id }
+        return firstOrNull { it.id == id }
     }
 
     fun findLaziestServerHost(serverRepository: ServerRepository): ServerHost? {
         var lastAmount = Int.MAX_VALUE
         var lastHost: ServerHost? = null
         for (host: ServerHost in this) {
-            val amount = serverRepository.findServersByHostId(host.getId()).size
+            val amount = serverRepository.findServersByHostId(host.id).size
             if (amount < lastAmount) {
                 lastAmount = amount
                 lastHost = host
@@ -25,7 +24,7 @@ class ServerHostRepository(path: String) : YamlRepository<ServerHost>(path) {
     }
 
     override fun findIndex(element: ServerHost): Int {
-        return indexOf(firstOrNull { it.getId() == element.getId() })
+        return indexOf(firstOrNull { it.id == element.id })
     }
 
 }
