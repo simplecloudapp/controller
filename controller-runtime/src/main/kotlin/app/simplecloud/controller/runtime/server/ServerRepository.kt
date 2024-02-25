@@ -52,9 +52,15 @@ class ServerRepository : Repository<Server>() {
     override fun delete(element: Server): CompletableFuture<Boolean> {
         val server = firstOrNull { it.uniqueId == element.uniqueId }
         if (server == null) return CompletableFuture.completedFuture(false)
+        val canDelete = db.deleteFrom(CLOUD_SERVER_PROPERTIES).where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(server.uniqueId)).executeAsync().toCompletableFuture().thenApply {
+            return@thenApply true
+                }.exceptionally {
+            return@exceptionally false
+        }.get()
+        if(!canDelete) return CompletableFuture.completedFuture(false)
         return db.deleteFrom(CLOUD_SERVERS).where(CLOUD_SERVERS.UNIQUE_ID.eq(server.uniqueId)).executeAsync().toCompletableFuture().thenApply {
             return@thenApply it > 0 && remove(server)
-        }
+        }.exceptionally { return@exceptionally false }
     }
 
     override fun save(element: Server) {
@@ -93,6 +99,19 @@ class ServerRepository : Repository<Server>() {
                 element.playerCount.toInt(),
                 element.state.toString()
         ).onDuplicateKeyUpdate()
+        element.properties.forEach {
+            db.insertInto(
+                    CLOUD_SERVER_PROPERTIES,
+
+                    CLOUD_SERVER_PROPERTIES.SERVER_ID,
+                    CLOUD_SERVER_PROPERTIES.KEY,
+                    CLOUD_SERVER_PROPERTIES.VALUE
+            ).values(
+                    element.uniqueId,
+                    it.key,
+                    it.value
+            ).onDuplicateKeyUpdate()
+        }
     }
 
 }
