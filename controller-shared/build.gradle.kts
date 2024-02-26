@@ -63,6 +63,10 @@ protobuf {
     }
 }
 
+tasks.named("build") {
+    finalizedBy(tasks.jooqCodegen)
+}
+
 jooq {
     configuration {
         generator {
