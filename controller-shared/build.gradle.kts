@@ -63,8 +63,8 @@ protobuf {
     }
 }
 
-tasks.named("build") {
-    finalizedBy(tasks.jooqCodegen)
+tasks.named("compileKotlin") {
+    dependsOn(tasks.jooqCodegen)
 }
 
 jooq {
