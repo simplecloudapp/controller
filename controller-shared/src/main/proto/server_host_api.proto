@@ -8,7 +8,12 @@ option java_multiple_files = true;
 import "controller_types.proto";
 import "controller_server_api.proto";
 
+message StartServerRequest {
+  GroupDefinition group = 1;
+  uint32 numerical_id = 2;
+}
+
 service ServerHostService {
-  rpc startServer(GroupDefinition) returns (ServerDefinition);
+  rpc startServer(StartServerRequest) returns (ServerDefinition);
   rpc stopServer(ServerIdRequest) returns (StatusResponse);
 }

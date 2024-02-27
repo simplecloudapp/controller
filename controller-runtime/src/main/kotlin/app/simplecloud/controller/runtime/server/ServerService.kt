@@ -41,7 +41,9 @@ class ServerService(
             responseObserver.onCompleted()
             return;
         }
-        stub.startServer(groupDefinition).toCompletable().thenApply {
+        stub.startServer(StartServerRequest.newBuilder()
+            .setGroup(groupDefinition)
+            .setNumericalId(serverRepository.findServersByGroup(groupDefinition.name).size + 1).build()).toCompletable().thenApply {
             serverRepository.save(Server.fromDefinition(it))
             responseObserver.onNext(it)
             responseObserver.onCompleted()
