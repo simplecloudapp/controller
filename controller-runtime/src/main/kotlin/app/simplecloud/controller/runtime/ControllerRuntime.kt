@@ -7,6 +7,7 @@ import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.runtime.server.ServerService
 import app.simplecloud.controller.shared.db.Database
+import app.simplecloud.controller.shared.group.Group
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Server
@@ -42,6 +43,7 @@ class ControllerRuntime {
         logger.info("Connecting database...")
         Database.init(databaseConfig)
         serverRepository = ServerRepository()
+        serverRepository.load()
     }
 
     private fun startGrpcServer() {
@@ -68,7 +70,7 @@ class ControllerRuntime {
 
     private fun createManagedChannel(): ManagedChannel {
         val port = System.getenv("GRPC_PORT")?.toInt() ?: 5816
-        return ManagedChannelBuilder.forAddress("localhost", port).build()
+        return ManagedChannelBuilder.forAddress("localhost", port).usePlaintext().build()
     }
 
     @OptIn(InternalCoroutinesApi::class)

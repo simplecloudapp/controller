@@ -1,1 +1,9 @@
-items:
+-   name: Survival
+    server-url: https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/450/downloads/paper-1.20.4-450.jar
+    template-id: default
+    min-memory: 1024
+    max-memory: 1024
+    start-port: 25565
+    min-online-count: 1
+    max-online-count: 2
+    properties: {}

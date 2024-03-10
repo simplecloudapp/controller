@@ -1,7 +1,9 @@
 package app.simplecloud.controller.shared.group
 
 import app.simplecloud.controller.shared.proto.GroupDefinition
+import org.spongepowered.configurate.objectmapping.ConfigSerializable
 
+@ConfigSerializable
 data class Group(
         val name: String,
         val serverUrl: String,
@@ -9,7 +11,7 @@ data class Group(
         val minMemory: Long,
         val maxMemory: Long,
         val startPort: Long,
-        val onlineServers: Long,
+        @Transient val onlineServers: Long,
         val minOnlineCount: Long,
         val maxOnlineCount: Long,
         val properties: Map<String, String>,

@@ -2,24 +2,28 @@ package app.simplecloud.controller.runtime
 
 import org.spongepowered.configurate.ConfigurationNode
 import org.spongepowered.configurate.kotlin.extensions.get
+import org.spongepowered.configurate.kotlin.objectMapper
 import org.spongepowered.configurate.kotlin.objectMapperFactory
 import org.spongepowered.configurate.objectmapping.ConfigSerializable
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
 
-abstract class YamlRepository<T>(path: String) : Repository<T>() {
+abstract class YamlRepository<T>(path: String, private var clazz: Class<T>) : Repository<T>() {
 
     private lateinit var node: ConfigurationNode
+    private lateinit var loader: YamlConfigurationLoader
     private var destination: File = File(path.substring(1, path.length))
     init {
         if(!destination.exists()) {
             Files.copy(YamlRepository::class.java.getResourceAsStream(path)!!, destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
+        load()
     }
-    override fun load() {
+    final override fun load() {
         val loader = YamlConfigurationLoader.builder()
                 .path(destination.toPath())
                 .defaultOptions { options ->
@@ -27,11 +31,9 @@ abstract class YamlRepository<T>(path: String) : Repository<T>() {
                         builder.registerAnnotatedObjects(objectMapperFactory())
                     }
                 }.build()
+        this.loader = loader
         node = loader.load()
-        addAll(node.get<YamlRepositoryType<T>>()?.items ?: ArrayList())
-        forEach {
-            println(it)
-        }
+        addAll(node.getList(clazz) ?: ArrayList())
     }
 
     override fun delete(element: T): CompletableFuture<Boolean> {
@@ -40,7 +42,7 @@ abstract class YamlRepository<T>(path: String) : Repository<T>() {
             return CompletableFuture.completedFuture(false)
         }
         removeAt(index)
-        node.set(YamlRepositoryType(this))
+        node.set(clazz, this)
         return CompletableFuture.completedFuture(true)
     }
 
@@ -52,11 +54,9 @@ abstract class YamlRepository<T>(path: String) : Repository<T>() {
         }else {
             add(element)
         }
-        node.set(YamlRepositoryType(this))
+        node.setList(clazz, this)
+        loader.save(node)
     }
 
     abstract fun findIndex(element: T): Int
 }
-
-@ConfigSerializable
-data class YamlRepositoryType<T>(var items: List<T>)

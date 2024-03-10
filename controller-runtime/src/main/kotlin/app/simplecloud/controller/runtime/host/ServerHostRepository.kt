@@ -5,7 +5,7 @@ import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.shared.host.ServerHost
 import java.io.File
 
-class ServerHostRepository(path: String) : YamlRepository<ServerHost>(path) {
+class ServerHostRepository(path: String) : YamlRepository<ServerHost>(path, ServerHost::class.java) {
     fun findServerHostById(id: String): ServerHost? {
         return firstOrNull { it.id == id }
     }
