@@ -4,8 +4,7 @@ import app.simplecloud.controller.shared.proto.GroupDefinition
 
 data class Group(
         val name: String,
-        val javaUrl: String,
-        val templateUrl: String,
+        val serverUrl: String,
         val templateId: String,
         val minMemory: Long,
         val maxMemory: Long,
@@ -19,8 +18,7 @@ data class Group(
     fun toDefinition(): GroupDefinition {
         return GroupDefinition.newBuilder()
                 .setName(name)
-                .setJavaUrl(javaUrl)
-                .setTemplateUrl(templateUrl)
+                .setServerUrl(serverUrl)
                 .setTemplateId(templateId)
                 .setMinimumMemory(minMemory)
                 .setMaximumMemory(maxMemory)
@@ -37,8 +35,7 @@ data class Group(
         fun fromDefinition(groupDefinition: GroupDefinition): Group {
             return Group(
                     groupDefinition.name,
-                    groupDefinition.javaUrl,
-                    groupDefinition.templateUrl,
+                    groupDefinition.serverUrl,
                     groupDefinition.templateId,
                     groupDefinition.minimumMemory,
                     groupDefinition.maximumMemory,
