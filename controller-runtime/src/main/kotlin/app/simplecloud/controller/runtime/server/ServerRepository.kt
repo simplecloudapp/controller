@@ -43,7 +43,7 @@ class ServerRepository : Repository<Server>() {
                     it.playerCount.toLong(),
                     propertiesQuery.map { item ->
                                         item.key to item.value
-                    }.toMap(),
+                    }.toMap().toMutableMap(),
                     ServerState.valueOf(it.state)
             ))
         }
@@ -64,15 +64,16 @@ class ServerRepository : Repository<Server>() {
     }
 
     override fun save(element: Server) {
-        val server = firstOrNull { it.uniqueId == element.uniqueId }
-        if (server != null) {
-            val index = indexOf(server)
-            removeAt(index)
-            add(index, element)
-        } else {
-            add(element)
-        }
-        db.insertInto(
+        try {
+            val server = firstOrNull { it.uniqueId == element.uniqueId }
+            if (server != null) {
+                val index = indexOf(server)
+                removeAt(index)
+                add(index, element)
+            } else {
+                add(element)
+            }
+            db.insertInto(
                 CLOUD_SERVERS,
 
                 CLOUD_SERVERS.UNIQUE_ID,
@@ -83,10 +84,10 @@ class ServerRepository : Repository<Server>() {
                 CLOUD_SERVERS.IP,
                 CLOUD_SERVERS.PORT,
                 CLOUD_SERVERS.MINIMUM_MEMORY,
-                CLOUD_SERVERS.MINIMUM_MEMORY,
+                CLOUD_SERVERS.MAXIMUM_MEMORY,
                 CLOUD_SERVERS.PLAYER_COUNT,
                 CLOUD_SERVERS.STATE,
-        ).values(
+            ).values(
                 element.uniqueId,
                 element.group,
                 element.host,
@@ -98,19 +99,23 @@ class ServerRepository : Repository<Server>() {
                 element.maxMemory.toInt(),
                 element.playerCount.toInt(),
                 element.state.toString()
-        ).onDuplicateKeyUpdate()
-        element.properties.forEach {
-            db.insertInto(
+            ).onDuplicateKeyUpdate().set(CLOUD_SERVERS.UNIQUE_ID, element.uniqueId).executeAsync()
+            element.properties.forEach {
+                db.insertInto(
                     CLOUD_SERVER_PROPERTIES,
 
                     CLOUD_SERVER_PROPERTIES.SERVER_ID,
                     CLOUD_SERVER_PROPERTIES.KEY,
                     CLOUD_SERVER_PROPERTIES.VALUE
-            ).values(
+                ).values(
                     element.uniqueId,
                     it.key,
                     it.value
-            ).onDuplicateKeyUpdate()
+                ).onDuplicateKeyUpdate().set(CLOUD_SERVER_PROPERTIES.SERVER_ID, element.uniqueId).executeAsync()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println(e.message)
         }
     }
 

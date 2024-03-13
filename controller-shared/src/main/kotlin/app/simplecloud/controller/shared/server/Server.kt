@@ -1,11 +1,7 @@
 package app.simplecloud.controller.shared.server
 
-import app.simplecloud.controller.shared.group.Group
-import app.simplecloud.controller.shared.host.ServerHost
 import app.simplecloud.controller.shared.proto.ServerDefinition
 import app.simplecloud.controller.shared.proto.ServerState
-import java.util.*
-import kotlin.math.min
 
 data class Server(
         val uniqueId: String,
@@ -43,8 +39,8 @@ data class Server(
         fun fromDefinition(serverDefinition: ServerDefinition): Server {
             return Server(
                     serverDefinition.uniqueId,
-                    serverDefinition.hostId,
                     serverDefinition.groupName,
+                    serverDefinition.hostId,
                     serverDefinition.numericalId,
                     serverDefinition.templateId,
                     serverDefinition.ip,
