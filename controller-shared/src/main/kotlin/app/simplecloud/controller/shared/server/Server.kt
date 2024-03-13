@@ -14,7 +14,7 @@ data class Server(
         val minMemory: Long,
         val maxMemory: Long,
         val playerCount: Long,
-        val properties: Map<String, String>,
+        val properties: MutableMap<String, String>,
         val state: ServerState,
 ) {
     fun toDefinition(): ServerDefinition {
