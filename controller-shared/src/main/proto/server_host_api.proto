@@ -15,5 +15,6 @@ message StartServerRequest {
 
 service ServerHostService {
   rpc startServer(StartServerRequest) returns (ServerDefinition);
-  rpc stopServer(ServerIdRequest) returns (StatusResponse);
+  rpc stopServer(ServerDefinition) returns (StatusResponse);
+  rpc reattachServer(ServerDefinition) returns (StatusResponse);
 }

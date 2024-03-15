@@ -4,9 +4,10 @@ import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.runtime.host.ServerHostException
 import app.simplecloud.controller.shared.future.toCompletable
-import app.simplecloud.controller.shared.group.Group
+import app.simplecloud.controller.shared.host.ServerHost
 import app.simplecloud.controller.shared.proto.*
 import app.simplecloud.controller.shared.server.Server
+import app.simplecloud.controller.shared.status.ApiResponse
 import io.grpc.stub.StreamObserver
 
 class ServerService(
@@ -14,6 +15,29 @@ class ServerService(
         private val hostRepository: ServerHostRepository,
         private val groupRepository: GroupRepository,
 ) : ControllerServerServiceGrpc.ControllerServerServiceImplBase() {
+
+    private var serversToAttach = mutableListOf<Server>()
+
+    init {
+        serversToAttach.addAll(serverRepository)
+    }
+
+    override fun attachServerHost(request: ServerHostDefinition, responseObserver: StreamObserver<StatusResponse>) {
+        val serverHost = ServerHost.fromDefinition(request)
+        if(hostRepository.findServerHostById(serverHost.id) != null) {
+            responseObserver.onNext(ApiResponse("error").toDefinition())
+            responseObserver.onCompleted()
+            return
+        }
+        hostRepository.add(serverHost)
+        val stub = ServerHostServiceGrpc.newFutureStub(serverHost.endpoint)
+        serversToAttach.filter { it.host == serverHost.id }.forEach {
+            stub.reattachServer(it.toDefinition())
+        }
+        responseObserver.onNext(ApiResponse("success").toDefinition())
+        responseObserver.onCompleted()
+    }
+
     override fun getServerById(request: ServerIdRequest, responseObserver: StreamObserver<ServerDefinition>) {
         val server = serverRepository.findServerById(request.id)
         responseObserver.onNext(server)
@@ -67,7 +91,7 @@ class ServerService(
             return
         }
         val stub = ServerHostServiceGrpc.newFutureStub(host.endpoint)
-        stub.stopServer(request).toCompletable().thenApply {
+        stub.stopServer(server).toCompletable().thenApply {
             if (it.status == "success") {
                 serverRepository.delete(Server.fromDefinition(server))
             }

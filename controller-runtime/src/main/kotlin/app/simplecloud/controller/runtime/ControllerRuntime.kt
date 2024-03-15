@@ -22,7 +22,7 @@ class ControllerRuntime {
 
     private val groupRepository: GroupRepository = GroupRepository("/groups.yml")
     private lateinit var serverRepository: ServerRepository
-    private val hostRepository: ServerHostRepository = ServerHostRepository("/hosts.yml")
+    private val hostRepository: ServerHostRepository = ServerHostRepository()
     private lateinit var databaseConfig: DatabaseConfig
     private lateinit var reconciler: Reconciler
     private lateinit var server: Server

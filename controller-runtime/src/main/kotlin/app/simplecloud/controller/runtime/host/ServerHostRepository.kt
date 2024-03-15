@@ -1,11 +1,11 @@
 package app.simplecloud.controller.runtime.host
 
-import app.simplecloud.controller.runtime.YamlRepository
+import app.simplecloud.controller.runtime.Repository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.shared.host.ServerHost
-import java.io.File
+import java.util.concurrent.CompletableFuture
 
-class ServerHostRepository(path: String) : YamlRepository<ServerHost>(path, ServerHost::class.java) {
+class ServerHostRepository : Repository<ServerHost>() {
     fun findServerHostById(id: String): ServerHost? {
         return firstOrNull { it.id == id }
     }
@@ -23,8 +23,16 @@ class ServerHostRepository(path: String) : YamlRepository<ServerHost>(path, Serv
         return lastHost
     }
 
-    override fun findIndex(element: ServerHost): Int {
-        return indexOf(firstOrNull { it.id == element.id })
+    override fun load() {
+        throw UnsupportedOperationException("This method is not implemented.")
+    }
+
+    override fun delete(element: ServerHost): CompletableFuture<Boolean> {
+        return CompletableFuture.completedFuture(add(element))
+    }
+
+    override fun save(element: ServerHost) {
+        throw UnsupportedOperationException("This method is not implemented.")
     }
 
 }

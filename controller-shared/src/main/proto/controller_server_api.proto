@@ -24,4 +24,5 @@ service ControllerServerService {
   rpc getServerById(ServerIdRequest) returns (ServerDefinition);
   rpc startServer(GroupNameRequest) returns (ServerDefinition);
   rpc stopServer(ServerIdRequest) returns (StatusResponse);
+  rpc attachServerHost(ServerHostDefinition) returns (StatusResponse);
 }
