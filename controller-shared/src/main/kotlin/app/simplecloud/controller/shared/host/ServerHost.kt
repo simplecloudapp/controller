@@ -3,7 +3,9 @@ package app.simplecloud.controller.shared.host
 import app.simplecloud.controller.shared.proto.ServerHostDefinition
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
+import org.spongepowered.configurate.objectmapping.ConfigSerializable
 
+@ConfigSerializable
 data class ServerHost(
         val id: String,
         val host: String,
