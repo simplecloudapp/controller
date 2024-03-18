@@ -14,37 +14,37 @@ class GroupApiImpl : GroupApi {
     private val managedChannel = Controller.createManagedChannelFromEnv()
 
     private val groupServiceStub: ControllerGroupServiceGrpc.ControllerGroupServiceFutureStub =
-            ControllerGroupServiceGrpc.newFutureStub(managedChannel)
+        ControllerGroupServiceGrpc.newFutureStub(managedChannel)
 
     override fun getGroupByName(name: String): CompletableFuture<Group> {
         return groupServiceStub.getGroupByName(
-                GetGroupByNameRequest.newBuilder()
-                        .setName(name)
-                        .build()
+            GetGroupByNameRequest.newBuilder()
+                .setName(name)
+                .build()
         ).toCompletable()
-                .thenApply {
-                    Group.fromDefinition(it.group)
-                }
+            .thenApply {
+                Group.fromDefinition(it.group)
+            }
     }
 
     override fun deleteGroup(name: String): CompletableFuture<ApiResponse> {
         return groupServiceStub.deleteGroupByName(
-                GetGroupByNameRequest.newBuilder()
-                        .setName(name)
-                        .build()
+            GetGroupByNameRequest.newBuilder()
+                .setName(name)
+                .build()
         ).toCompletable()
-                .thenApply {
-                    ApiResponse.fromDefinition(it)
-                }
+            .thenApply {
+                ApiResponse.fromDefinition(it)
+            }
     }
 
     override fun createGroup(group: Group): CompletableFuture<ApiResponse> {
         return groupServiceStub.createGroup(
-                group.toDefinition()
+            group.toDefinition()
         ).toCompletable()
-                .thenApply {
-                    ApiResponse.fromDefinition(it)
-                }
+            .thenApply {
+                ApiResponse.fromDefinition(it)
+            }
     }
 
 }

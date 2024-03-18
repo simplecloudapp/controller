@@ -30,7 +30,8 @@ class ServerRepository : Repository<Server>() {
         val query = db.select().from(CLOUD_SERVERS).fetchInto(CLOUD_SERVERS)
         query.map {
             val propertiesQuery = db.select().from(CLOUD_SERVER_PROPERTIES).fetchInto(CLOUD_SERVER_PROPERTIES)
-            add(Server(
+            add(
+                Server(
                     it.uniqueId,
                     it.groupName,
                     it.hostId,
@@ -42,25 +43,33 @@ class ServerRepository : Repository<Server>() {
                     it.maximumMemory.toLong(),
                     it.playerCount.toLong(),
                     propertiesQuery.map { item ->
-                                        item.key to item.value
+                        item.key to item.value
                     }.toMap().toMutableMap(),
                     ServerState.valueOf(it.state)
-            ))
+                )
+            )
         }
     }
 
     override fun delete(element: Server): CompletableFuture<Boolean> {
         val server = firstOrNull { it.uniqueId == element.uniqueId }
         if (server == null) return CompletableFuture.completedFuture(false)
-        val canDelete = db.deleteFrom(CLOUD_SERVER_PROPERTIES).where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(server.uniqueId)).executeAsync().toCompletableFuture().thenApply {
-            return@thenApply true
+        val canDelete =
+            db.deleteFrom(CLOUD_SERVER_PROPERTIES).where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(server.uniqueId))
+                .executeAsync().toCompletableFuture().thenApply {
+                    return@thenApply true
                 }.exceptionally {
-            return@exceptionally false
-        }.get()
-        if(!canDelete) return CompletableFuture.completedFuture(false)
-        return db.deleteFrom(CLOUD_SERVERS).where(CLOUD_SERVERS.UNIQUE_ID.eq(server.uniqueId)).executeAsync().toCompletableFuture().thenApply {
-            return@thenApply it > 0 && remove(server)
-        }.exceptionally { return@exceptionally false }
+                    it.printStackTrace()
+                    return@exceptionally false
+                }.get()
+        if (!canDelete) return CompletableFuture.completedFuture(false)
+        return db.deleteFrom(CLOUD_SERVERS).where(CLOUD_SERVERS.UNIQUE_ID.eq(server.uniqueId)).executeAsync()
+            .toCompletableFuture().thenApply {
+                return@thenApply it > 0 && remove(server)
+            }.exceptionally {
+                it.printStackTrace()
+                return@exceptionally false
+            }
     }
 
     override fun save(element: Server) {

@@ -20,15 +20,19 @@ data class DatabaseConfig(var driver: String = "jdbc:sqlite", var url: String) {
             }
             val destination = File(path.substring(1, path.length))
             if (!destination.exists()) {
-                Files.copy(DatabaseConfig::class.java.getResourceAsStream(path)!!, destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                Files.copy(
+                    DatabaseConfig::class.java.getResourceAsStream(path)!!,
+                    destination.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING
+                )
             }
             val loader = YamlConfigurationLoader.builder()
-                    .path(destination.toPath())
-                    .defaultOptions { options ->
-                        options.serializers { builder ->
-                            builder.registerAnnotatedObjects(objectMapperFactory())
-                        }
-                    }.build()
+                .path(destination.toPath())
+                .defaultOptions { options ->
+                    options.serializers { builder ->
+                        builder.registerAnnotatedObjects(objectMapperFactory())
+                    }
+                }.build()
             val node = loader.load()
             val config = node.get<DatabaseConfig>()
             return config

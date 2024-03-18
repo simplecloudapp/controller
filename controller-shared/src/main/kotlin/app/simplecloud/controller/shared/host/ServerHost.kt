@@ -7,9 +7,9 @@ import org.spongepowered.configurate.objectmapping.ConfigSerializable
 
 @ConfigSerializable
 data class ServerHost(
-        val id: String,
-        val host: String,
-        val port: Int
+    val id: String,
+    val host: String,
+    val port: Int
 ) {
 
     fun toDefinition(): ServerHostDefinition {

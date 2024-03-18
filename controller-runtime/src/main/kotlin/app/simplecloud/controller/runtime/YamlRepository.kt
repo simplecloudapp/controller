@@ -17,20 +17,26 @@ abstract class YamlRepository<T>(path: String, private var clazz: Class<T>) : Re
     private lateinit var node: ConfigurationNode
     private lateinit var loader: YamlConfigurationLoader
     private var destination: File = File(path.substring(1, path.length))
+
     init {
-        if(!destination.exists()) {
-            Files.copy(YamlRepository::class.java.getResourceAsStream(path)!!, destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        if (!destination.exists()) {
+            Files.copy(
+                YamlRepository::class.java.getResourceAsStream(path)!!,
+                destination.toPath(),
+                StandardCopyOption.REPLACE_EXISTING
+            )
         }
         load()
     }
+
     final override fun load() {
         val loader = YamlConfigurationLoader.builder()
-                .path(destination.toPath())
-                .defaultOptions { options ->
-                    options.serializers { builder ->
-                        builder.registerAnnotatedObjects(objectMapperFactory())
-                    }
-                }.build()
+            .path(destination.toPath())
+            .defaultOptions { options ->
+                options.serializers { builder ->
+                    builder.registerAnnotatedObjects(objectMapperFactory())
+                }
+            }.build()
         this.loader = loader
         node = loader.load()
         addAll(node.getList(clazz) ?: ArrayList())
@@ -38,7 +44,7 @@ abstract class YamlRepository<T>(path: String, private var clazz: Class<T>) : Re
 
     override fun delete(element: T): CompletableFuture<Boolean> {
         val index = findIndex(element)
-        if(index == -1) {
+        if (index == -1) {
             return CompletableFuture.completedFuture(false)
         }
         removeAt(index)
@@ -48,10 +54,10 @@ abstract class YamlRepository<T>(path: String, private var clazz: Class<T>) : Re
 
     override fun save(element: T) {
         val index = findIndex(element)
-        if(index != -1) {
+        if (index != -1) {
             removeAt(index)
             add(index, element)
-        }else {
+        } else {
             add(element)
         }
         node.setList(clazz, this)

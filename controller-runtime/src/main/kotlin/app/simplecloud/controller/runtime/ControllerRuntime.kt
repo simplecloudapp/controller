@@ -57,15 +57,15 @@ class ControllerRuntime {
     private fun startReconciler() {
         logger.info("Starting Reconciler...")
         reconciler = Reconciler(groupRepository, serverRepository, createManagedChannel())
-        startReconcilerJob(3000L)
+        startReconcilerJob()
     }
 
     private fun createGrpcServerFromEnv(): Server {
         val port = System.getenv("GRPC_PORT")?.toInt() ?: 5816
         return ServerBuilder.forPort(port)
-                .addService(GroupService(groupRepository))
-                .addService(ServerService(serverRepository, hostRepository, groupRepository))
-                .build()
+            .addService(GroupService(groupRepository))
+            .addService(ServerService(serverRepository, hostRepository, groupRepository))
+            .build()
     }
 
     private fun createManagedChannel(): ManagedChannel {
@@ -74,11 +74,11 @@ class ControllerRuntime {
     }
 
     @OptIn(InternalCoroutinesApi::class)
-    private fun startReconcilerJob(timeInterval: Long): Job {
+    private fun startReconcilerJob(): Job {
         return CoroutineScope(Dispatchers.Default).launch {
             while (NonCancellable.isActive) {
                 reconciler.reconcile()
-                delay(timeInterval)
+                delay(5000L)
             }
         }
     }

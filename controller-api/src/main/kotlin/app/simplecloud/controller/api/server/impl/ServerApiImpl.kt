@@ -17,28 +17,28 @@ class ServerApiImpl : ServerApi {
     private val messageChannel = Controller.createManagedChannelFromEnv()
 
     private val serverServiceStub: ControllerServerServiceGrpc.ControllerServerServiceFutureStub =
-            ControllerServerServiceGrpc.newFutureStub(messageChannel)
+        ControllerServerServiceGrpc.newFutureStub(messageChannel)
 
     override fun getServerById(id: String): CompletableFuture<Server> {
         return serverServiceStub.getServerById(
-                ServerIdRequest.newBuilder()
-                        .setId(id)
-                        .build()
+            ServerIdRequest.newBuilder()
+                .setId(id)
+                .build()
         ).toCompletable()
-                .thenApply {
-                    Server.fromDefinition(it)
-                }
+            .thenApply {
+                Server.fromDefinition(it)
+            }
     }
 
     override fun getServersByGroup(groupName: String): CompletableFuture<List<Server>> {
         return serverServiceStub.getServersByGroup(
-                GroupNameRequest.newBuilder()
-                        .setName(groupName)
-                        .build()
+            GroupNameRequest.newBuilder()
+                .setName(groupName)
+                .build()
         ).toCompletable()
-                .thenApply {
-                    Server.fromDefinition(it.serversList)
-                }
+            .thenApply {
+                Server.fromDefinition(it.serversList)
+            }
     }
 
     override fun getServersByGroup(group: Group): CompletableFuture<List<Server>> {
@@ -47,23 +47,23 @@ class ServerApiImpl : ServerApi {
 
     override fun startServer(groupName: String): CompletableFuture<Server?> {
         return serverServiceStub.startServer(
-                GroupNameRequest.newBuilder()
-                        .setName(groupName)
-                        .build()
+            GroupNameRequest.newBuilder()
+                .setName(groupName)
+                .build()
         ).toCompletable()
-                .thenApply {
-                    Server.fromDefinition(it)
-                }
+            .thenApply {
+                Server.fromDefinition(it)
+            }
     }
 
     override fun stopServer(id: String): CompletableFuture<ApiResponse> {
         return serverServiceStub.stopServer(
-                ServerIdRequest.newBuilder()
-                        .setId(id)
-                        .build()
+            ServerIdRequest.newBuilder()
+                .setId(id)
+                .build()
         ).toCompletable()
-                .thenApply {
-                    ApiResponse.fromDefinition(it)
-                }
+            .thenApply {
+                ApiResponse.fromDefinition(it)
+            }
     }
 }

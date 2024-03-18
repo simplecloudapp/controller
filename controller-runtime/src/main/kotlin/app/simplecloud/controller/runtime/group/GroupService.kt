@@ -6,17 +6,17 @@ import app.simplecloud.controller.shared.status.ApiResponse
 import io.grpc.stub.StreamObserver
 
 class GroupService(
-        private val groupRepository: GroupRepository
+    private val groupRepository: GroupRepository
 ) : ControllerGroupServiceGrpc.ControllerGroupServiceImplBase() {
 
     override fun getGroupByName(
-            request: GetGroupByNameRequest,
-            responseObserver: StreamObserver<GetGroupByNameResponse>
+        request: GetGroupByNameRequest,
+        responseObserver: StreamObserver<GetGroupByNameResponse>
     ) {
         val group = groupRepository.findGroupByName(request.name)
         val response = GetGroupByNameResponse.newBuilder()
-                .setGroup(group)
-                .build()
+            .setGroup(group)
+            .build()
 
         responseObserver.onNext(response)
         responseObserver.onCompleted()
@@ -28,15 +28,14 @@ class GroupService(
             groupRepository.save(group)
             responseObserver.onNext(ApiResponse(status = "success").toDefinition())
             responseObserver.onCompleted()
-        }catch (e: Exception) {
+        } catch (e: Exception) {
             responseObserver.onError(e)
-            responseObserver.onCompleted()
         }
     }
 
     override fun deleteGroupByName(request: GetGroupByNameRequest, responseObserver: StreamObserver<StatusResponse>) {
         val groupDefinition = groupRepository.findGroupByName(request.name)
-        if(groupDefinition == null) {
+        if (groupDefinition == null) {
             responseObserver.onNext(ApiResponse(status = "error").toDefinition())
             responseObserver.onCompleted()
             return
@@ -44,12 +43,11 @@ class GroupService(
         val group = Group.fromDefinition(groupDefinition)
         try {
             groupRepository.delete(group).thenApply {
-                responseObserver.onNext(ApiResponse(status = if(it) "success" else "error").toDefinition())
+                responseObserver.onNext(ApiResponse(status = if (it) "success" else "error").toDefinition())
                 responseObserver.onCompleted()
             }
-        }catch (e: Exception) {
+        } catch (e: Exception) {
             responseObserver.onError(e)
-            responseObserver.onCompleted()
         }
     }
 

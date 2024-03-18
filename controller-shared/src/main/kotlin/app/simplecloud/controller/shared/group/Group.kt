@@ -19,33 +19,33 @@ data class Group(
 
     fun toDefinition(): GroupDefinition {
         return GroupDefinition.newBuilder()
-                .setName(name)
-                .setServerUrl(serverUrl)
-                .setTemplateId(templateId)
-                .setMinimumMemory(minMemory)
-                .setMaximumMemory(maxMemory)
-                .setStartPort(startPort)
-                .setOnlineServers(onlineServers)
-                .setMinimumOnlineCount(minOnlineCount)
-                .setMaximumOnlineCount(maxOnlineCount)
-                .putAllProperties(properties)
-                .build()
+            .setName(name)
+            .setServerUrl(serverUrl)
+            .setTemplateId(templateId)
+            .setMinimumMemory(minMemory)
+            .setMaximumMemory(maxMemory)
+            .setStartPort(startPort)
+            .setOnlineServers(onlineServers)
+            .setMinimumOnlineCount(minOnlineCount)
+            .setMaximumOnlineCount(maxOnlineCount)
+            .putAllProperties(properties)
+            .build()
     }
 
     companion object {
         @JvmStatic
         fun fromDefinition(groupDefinition: GroupDefinition): Group {
             return Group(
-                    groupDefinition.name,
-                    groupDefinition.serverUrl,
-                    groupDefinition.templateId,
-                    groupDefinition.minimumMemory,
-                    groupDefinition.maximumMemory,
-                    groupDefinition.startPort,
-                    groupDefinition.onlineServers,
-                    groupDefinition.minimumOnlineCount,
-                    groupDefinition.maximumOnlineCount,
-                    groupDefinition.propertiesMap
+                groupDefinition.name,
+                groupDefinition.serverUrl,
+                groupDefinition.templateId,
+                groupDefinition.minimumMemory,
+                groupDefinition.maximumMemory,
+                groupDefinition.startPort,
+                groupDefinition.onlineServers,
+                groupDefinition.minimumOnlineCount,
+                groupDefinition.maximumOnlineCount,
+                groupDefinition.propertiesMap
             )
         }
     }

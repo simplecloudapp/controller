@@ -30,6 +30,7 @@ class ListenableFutureAdapter<T>(
             }
         }, ForkJoinPool.commonPool())
     }
+
     companion object {
         fun <T> toCompletable(listenableFuture: ListenableFuture<T>): CompletableFuture<T> {
             val listenableFutureAdapter: ListenableFutureAdapter<T> = ListenableFutureAdapter<T>(listenableFuture)
