@@ -5,6 +5,7 @@ import java.net.URI
 plugins {
     alias(libs.plugins.kotlin)
     alias(libs.plugins.shadow)
+    `maven-publish`
 }
 
 allprojects {
@@ -22,24 +23,6 @@ subprojects {
     apply(plugin = "com.github.johnrengelman.shadow")
     apply(plugin = "maven-publish")
 
-    configure<PublishingExtension> {
-        repositories {
-            maven {
-                name = "GitHubPackages"
-                url = URI.create("https://maven.pkg.github.com/theSimpleCloud/simplecloud-controller")
-                credentials {
-                    username = System.getenv("USERNAME")
-                    password = System.getenv("TOKEN")
-                }
-            }
-        }
-        publications {
-            register<MavenPublication>("gpr") {
-                from(components["java"])
-            }
-        }
-    }
-
     dependencies {
         testImplementation(rootProject.libs.kotlinTest)
         implementation(rootProject.libs.kotlinJvm)
@@ -47,6 +30,14 @@ subprojects {
 
     kotlin {
         jvmToolchain(17)
+    }
+
+    publishing {
+        publications {
+            create<MavenPublication>("mavenJava") {
+                from(components["java"])
+            }
+        }
     }
 
     tasks.withType<KotlinCompile> {
