@@ -7,7 +7,6 @@ import org.spongepowered.configurate.objectmapping.ConfigSerializable
 data class Group(
         val name: String,
         val serverUrl: String,
-        val templateId: String,
         val minMemory: Long,
         val maxMemory: Long,
         val startPort: Long,
@@ -21,7 +20,6 @@ data class Group(
         return GroupDefinition.newBuilder()
             .setName(name)
             .setServerUrl(serverUrl)
-            .setTemplateId(templateId)
             .setMinimumMemory(minMemory)
             .setMaximumMemory(maxMemory)
             .setStartPort(startPort)
@@ -38,7 +36,6 @@ data class Group(
             return Group(
                 groupDefinition.name,
                 groupDefinition.serverUrl,
-                groupDefinition.templateId,
                 groupDefinition.minimumMemory,
                 groupDefinition.maximumMemory,
                 groupDefinition.startPort,

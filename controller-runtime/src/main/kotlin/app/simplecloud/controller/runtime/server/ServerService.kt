@@ -74,10 +74,14 @@ class ServerService(
             responseObserver.onError(IllegalArgumentException("No group was found matching the group name."))
             return
         }
+        val numericalId = serverRepository.findServersByGroup(groupDefinition.name).size + 1
         stub.startServer(
             StartServerRequest.newBuilder()
                 .setGroup(groupDefinition)
-                .setNumericalId(serverRepository.findServersByGroup(groupDefinition.name).size + 1).build()
+                .setNumericalId(numericalId)
+                //TODO: Smart port generation
+                .setPort((groupDefinition.startPort + numericalId - 1).toInt())
+                .build()
         ).toCompletable().thenApply {
             serverRepository.save(Server.fromDefinition(it))
             responseObserver.onNext(it)
