@@ -9,7 +9,9 @@ import app.simplecloud.controller.shared.proto.ServerState
 import app.simplecloud.controller.shared.server.Server
 import java.util.concurrent.CompletableFuture
 
-class ServerRepository : Repository<Server>() {
+class ServerRepository(
+    private val numericalIdRepository: ServerNumericalIdRepository
+) : Repository<Server>() {
 
     private val db = Database.get()
 
@@ -25,19 +27,12 @@ class ServerRepository : Repository<Server>() {
         return filter { server -> server.group == group }.map { server -> server.toDefinition() }
     }
 
-    fun findNextNumericalId(group: String): Int {
-        var id = 1
-        findServersByGroup(group).sortedWith(compareBy { it.numericalId }).forEach {
-            if(it.numericalId == id) id++
-        }
-        return id
-    }
-
     override fun load() {
         clear()
         val query = db.select().from(CLOUD_SERVERS).fetchInto(CLOUD_SERVERS)
         query.map {
             val propertiesQuery = db.select().from(CLOUD_SERVER_PROPERTIES).fetchInto(CLOUD_SERVER_PROPERTIES)
+            numericalIdRepository.saveNumericalId(it.groupName, it.numericalId)
             add(
                 Server(
                     it.uniqueId,
@@ -60,8 +55,7 @@ class ServerRepository : Repository<Server>() {
     }
 
     override fun delete(element: Server): CompletableFuture<Boolean> {
-        val server = firstOrNull { it.uniqueId == element.uniqueId }
-        if (server == null) return CompletableFuture.completedFuture(false)
+        val server = firstOrNull { it.uniqueId == element.uniqueId } ?: return CompletableFuture.completedFuture(false)
         val canDelete =
             db.deleteFrom(CLOUD_SERVER_PROPERTIES).where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(server.uniqueId))
                 .executeAsync().toCompletableFuture().thenApply {
@@ -71,6 +65,7 @@ class ServerRepository : Repository<Server>() {
                     return@exceptionally false
                 }.get()
         if (!canDelete) return CompletableFuture.completedFuture(false)
+        numericalIdRepository.removeNumericalId(server.group, server.numericalId)
         return db.deleteFrom(CLOUD_SERVERS).where(CLOUD_SERVERS.UNIQUE_ID.eq(server.uniqueId)).executeAsync()
             .toCompletableFuture().thenApply {
                 return@thenApply it > 0 && remove(server)
@@ -90,6 +85,9 @@ class ServerRepository : Repository<Server>() {
             } else {
                 add(element)
             }
+
+            numericalIdRepository.saveNumericalId(element.group, element.numericalId)
+
             db.insertInto(
                 CLOUD_SERVERS,
 

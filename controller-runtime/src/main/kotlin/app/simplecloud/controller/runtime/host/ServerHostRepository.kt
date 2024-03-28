@@ -3,6 +3,7 @@ package app.simplecloud.controller.runtime.host
 import app.simplecloud.controller.runtime.Repository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.shared.host.ServerHost
+import io.grpc.ConnectivityState
 import java.util.concurrent.CompletableFuture
 
 class ServerHostRepository : Repository<ServerHost>() {
@@ -21,6 +22,13 @@ class ServerHostRepository : Repository<ServerHost>() {
             }
         }
         return lastHost
+    }
+
+    fun areServerHostsAvailable(): Boolean {
+        return any {
+            val state = it.endpoint.getState(true)
+            state == ConnectivityState.IDLE || state == ConnectivityState.READY
+        }
     }
 
     override fun load() {

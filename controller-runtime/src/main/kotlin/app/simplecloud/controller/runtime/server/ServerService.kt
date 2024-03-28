@@ -9,13 +9,11 @@ import app.simplecloud.controller.shared.proto.*
 import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.controller.shared.status.ApiResponse
 import io.grpc.Context
-import io.grpc.Status
-import io.grpc.StatusException
-import io.grpc.protobuf.StatusProto
 import io.grpc.stub.StreamObserver
 import org.apache.logging.log4j.LogManager
 
 class ServerService(
+    private val numericalIdRepository: ServerNumericalIdRepository,
     private val serverRepository: ServerRepository,
     private val hostRepository: ServerHostRepository,
     private val groupRepository: GroupRepository,
@@ -74,10 +72,12 @@ class ServerService(
             responseObserver.onError(IllegalArgumentException("No group was found matching the group name."))
             return
         }
+
+        val numericalId = numericalIdRepository.findNextNumericalId(groupDefinition.name)
         stub.startServer(
             StartServerRequest.newBuilder()
                 .setGroup(groupDefinition)
-                .setNumericalId(serverRepository.findNextNumericalId(groupDefinition.name))
+                .setNumericalId(numericalId)
                 .build()
         ).toCompletable().thenApply {
             serverRepository.save(Server.fromDefinition(it))
@@ -85,6 +85,8 @@ class ServerService(
             responseObserver.onCompleted()
             return@thenApply
         }.exceptionally {
+
+            numericalIdRepository.removeNumericalId(groupDefinition.name, numericalId)
             responseObserver.onError(ServerHostException("Could not start server, aborting."))
         }
     }
