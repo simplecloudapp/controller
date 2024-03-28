@@ -4,13 +4,16 @@ import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.runtime.host.ServerHostException
 import app.simplecloud.controller.shared.future.toCompletable
+import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.host.ServerHost
 import app.simplecloud.controller.shared.proto.*
 import app.simplecloud.controller.shared.server.Server
+import app.simplecloud.controller.shared.server.ServerFactory
 import app.simplecloud.controller.shared.status.ApiResponse
 import io.grpc.Context
 import io.grpc.stub.StreamObserver
 import org.apache.logging.log4j.LogManager
+import java.util.*
 
 class ServerService(
     private val numericalIdRepository: ServerNumericalIdRepository,
@@ -74,18 +77,18 @@ class ServerService(
         }
 
         val numericalId = numericalIdRepository.findNextNumericalId(groupDefinition.name)
-        stub.startServer(
-            StartServerRequest.newBuilder()
-                .setGroup(groupDefinition)
-                .setNumericalId(numericalId)
-                .build()
-        ).toCompletable().thenApply {
+        val server = ServerFactory.builder()
+          .setGroup(Group.fromDefinition(groupDefinition))
+          .setNumericalId(numericalId)
+          .build()
+        serverRepository.save(server)
+        stub.startServer(server.toDefinition()).toCompletable().thenApply {
             serverRepository.save(Server.fromDefinition(it))
             responseObserver.onNext(it)
             responseObserver.onCompleted()
             return@thenApply
         }.exceptionally {
-
+          serverRepository.delete(server)
             numericalIdRepository.removeNumericalId(groupDefinition.name, numericalId)
             responseObserver.onError(ServerHostException("Could not start server, aborting."))
         }
