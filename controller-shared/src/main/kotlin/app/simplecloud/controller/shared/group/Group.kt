@@ -10,7 +10,7 @@ data class Group(
         val minMemory: Long,
         val maxMemory: Long,
         val startPort: Long,
-        @Transient val onlineServers: Long,
+        @Transient val onlineServers: Long?,
         val minOnlineCount: Long,
         val maxOnlineCount: Long,
         val properties: Map<String, String>,
@@ -23,7 +23,7 @@ data class Group(
             .setMinimumMemory(minMemory)
             .setMaximumMemory(maxMemory)
             .setStartPort(startPort)
-            .setOnlineServers(onlineServers)
+            .setOnlineServers(onlineServers?: 0)
             .setMinimumOnlineCount(minOnlineCount)
             .setMaximumOnlineCount(maxOnlineCount)
             .putAllProperties(properties)
