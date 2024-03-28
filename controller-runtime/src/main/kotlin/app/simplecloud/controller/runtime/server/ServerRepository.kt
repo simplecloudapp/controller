@@ -25,6 +25,14 @@ class ServerRepository : Repository<Server>() {
         return filter { server -> server.group == group }.map { server -> server.toDefinition() }
     }
 
+    fun findNextNumericalId(group: String): Int {
+        var id = 1
+        findServersByGroup(group).sortedWith(compareBy { it.numericalId }).forEach {
+            if(it.numericalId == id) id++
+        }
+        return id
+    }
+
     override fun load() {
         clear()
         val query = db.select().from(CLOUD_SERVERS).fetchInto(CLOUD_SERVERS)

@@ -4,15 +4,11 @@ import app.simplecloud.controller.runtime.YamlRepository
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.proto.GroupDefinition
 
-class GroupRepository(path: String) : YamlRepository<Group>(path, Group::class.java) {
-
+class GroupRepository(path: String, parent: String?) : YamlRepository<Group>(if(parent != null) "$parent$path" else path, Group::class.java) {
     fun findGroupByName(name: String): GroupDefinition? {
         return firstOrNull { it.name == name }?.toDefinition()
     }
-
     override fun findIndex(element: Group): Int {
         return indexOf(firstOrNull { it.name == element.name })
     }
-
-
 }

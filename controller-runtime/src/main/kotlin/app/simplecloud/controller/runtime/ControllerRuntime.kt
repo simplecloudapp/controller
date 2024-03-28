@@ -7,7 +7,6 @@ import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.runtime.server.ServerService
 import app.simplecloud.controller.shared.db.Database
-import app.simplecloud.controller.shared.group.Group
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Server
@@ -20,14 +19,15 @@ class ControllerRuntime {
 
     private val logger = LogManager.getLogger(ControllerRuntime::class.java)
 
-    private val groupRepository: GroupRepository = GroupRepository("/groups.yml")
+    private lateinit var groupRepository: GroupRepository
     private lateinit var serverRepository: ServerRepository
     private val hostRepository: ServerHostRepository = ServerHostRepository()
     private lateinit var databaseConfig: DatabaseConfig
     private lateinit var reconciler: Reconciler
     private lateinit var server: Server
 
-    fun start() {
+    fun start(args: MutableMap<String, String>) {
+        groupRepository = GroupRepository("/groups.yml", args.getOrDefault("groups-path", null))
         logger.info("Starting database...")
         loadDB()
         logger.info("Starting controller...")

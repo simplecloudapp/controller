@@ -11,7 +11,6 @@ import "controller_server_api.proto";
 message StartServerRequest {
   GroupDefinition group = 1;
   uint32 numerical_id = 2;
-  uint32 port = 3;
 }
 
 service ServerHostService {
