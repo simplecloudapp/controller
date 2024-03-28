@@ -13,7 +13,6 @@ import app.simplecloud.controller.shared.status.ApiResponse
 import io.grpc.Context
 import io.grpc.stub.StreamObserver
 import org.apache.logging.log4j.LogManager
-import java.util.*
 
 class ServerService(
     private val numericalIdRepository: ServerNumericalIdRepository,
@@ -79,10 +78,13 @@ class ServerService(
         val numericalId = numericalIdRepository.findNextNumericalId(groupDefinition.name)
         val server = ServerFactory.builder()
           .setGroup(Group.fromDefinition(groupDefinition))
-          .setNumericalId(numericalId)
+          .setNumericalId(numericalId.toLong())
           .build()
         serverRepository.save(server)
-        stub.startServer(server.toDefinition()).toCompletable().thenApply {
+        stub.startServer(StartServerRequest.newBuilder()
+            .setGroup(groupDefinition)
+            .setServer(server.toDefinition())
+            .build()).toCompletable().thenApply {
             serverRepository.save(Server.fromDefinition(it))
             responseObserver.onNext(it)
             responseObserver.onCompleted()

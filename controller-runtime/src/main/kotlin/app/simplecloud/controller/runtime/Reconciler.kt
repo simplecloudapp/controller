@@ -10,7 +10,6 @@ import app.simplecloud.controller.shared.proto.GroupNameRequest
 import app.simplecloud.controller.shared.proto.ServerState
 import io.grpc.ManagedChannel
 import org.apache.logging.log4j.LogManager
-import java.util.concurrent.ConcurrentHashMap
 
 class Reconciler(
   private val groupRepository: GroupRepository,
@@ -22,18 +21,19 @@ class Reconciler(
   private val serverStub = ControllerServerServiceGrpc.newFutureStub(managedChannel)
   private val logger = LogManager.getLogger(Reconciler::class.java)
 
-  private val startingGroupNames = ConcurrentHashMap<String, Int>()
-
   fun reconcile() {
     groupRepository.forEach { group ->
       val servers = serverRepository.findServersByGroup(group.name)
       val availableServerCount = servers.count { server ->
-        server.state == ServerState.AVAILABLE || server.state == ServerState.STARTING
+        server.state == ServerState.AVAILABLE
+          || server.state == ServerState.STARTING
+          || server.state == ServerState.PREPARING
       }
-      val startingServers = startingGroupNames.getOrDefault(group.name, 0)
+
+      logger.info("Reconciling group ${group.name} with ${servers.size} servers, $availableServerCount available servers")
 
       cleanupServers()
-      startServers(group, availableServerCount, startingServers, servers.size)
+      startServers(group, availableServerCount, servers.size)
     }
   }
 
@@ -44,16 +44,14 @@ class Reconciler(
   private fun startServers(
     group: Group,
     availableServerCount: Int,
-    startingServers: Int,
     serverCount: Int
   ) {
-    if (!checkIfNewServerCanBeStarted(group, availableServerCount, startingServers, serverCount) ||
+    if (!checkIfNewServerCanBeStarted(group, availableServerCount, serverCount) ||
       !serverHostRepository.areServerHostsAvailable()
     ) {
       return
     }
 
-    startingGroupNames[group.name] = startingGroupNames.getOrDefault(group.name, 0) + 1
     startServer(group)
   }
 
@@ -61,44 +59,30 @@ class Reconciler(
     logger.info("Starting new instance of group ${group.name}")
     serverStub.startServer(GroupNameRequest.newBuilder().setName(group.name).build()).toCompletable()
       .thenApply {
-        cleanupStartingGroup(group)
         logger.info("Started new instance ${it.groupName}-${it.numericalId}/${it.uniqueId} of group ${group.name} on ${it.ip}:${it.port}")
       }.exceptionally {
-        cleanupStartingGroup(group)
         logger.error("Could not start a new instance of group ${group.name}: ${it.message}")
       }
-  }
-
-  @Synchronized
-  private fun cleanupStartingGroup(group: Group) {
-    if (startingGroupNames.getOrDefault(group.name, 0) <= 1) {
-      startingGroupNames.remove(group.name)
-      return
-    }
-
-    startingGroupNames[group.name] = startingGroupNames[group.name]!! - 1
   }
 
   private fun checkIfNewServerCanBeStarted(
     group: Group,
     availableServerCount: Int,
-    startingServers: Int,
     serverCount: Int
   ): Boolean {
-    return getNeededServerCount(group, availableServerCount, startingServers, serverCount) > 0
+    return getNeededServerCount(group, availableServerCount, serverCount) > 0
   }
 
   private fun getNeededServerCount(
     group: Group,
     availableServerCount: Int,
-    startingServers: Int,
     serverCount: Int
   ): Int {
     if (!checkIfServersAreNeeded(group, availableServerCount, serverCount)) {
       return 0
     }
 
-    return (group.minOnlineCount - availableServerCount - startingServers).toInt()
+    return (group.minOnlineCount - availableServerCount).toInt()
   }
 
   private fun checkIfServersAreNeeded(group: Group, availableServerCount: Int, serverCount: Int): Boolean {

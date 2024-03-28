@@ -1,6 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.net.URI
 
 plugins {
     alias(libs.plugins.kotlin)
@@ -11,7 +10,7 @@ plugins {
 allprojects {
 
     group = "app.simplecloud.controller"
-    version = "1.0.12-EXPERIMENTAL"
+    version = "1.0.14-EXPERIMENTAL"
 
     repositories {
         mavenCentral()

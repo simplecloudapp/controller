@@ -10,12 +10,11 @@ import "controller_server_api.proto";
 
 message StartServerRequest {
   GroupDefinition group = 1;
-  uint32 numerical_id = 2;
-  string unique_id = 3;
+  ServerDefinition server = 2;
 }
 
 service ServerHostService {
-  rpc startServer(ServerDefinition) returns (ServerDefinition);
+  rpc startServer(StartServerRequest) returns (ServerDefinition);
   rpc stopServer(ServerDefinition) returns (StatusResponse);
   rpc reattachServer(ServerDefinition) returns (StatusResponse);
 }
