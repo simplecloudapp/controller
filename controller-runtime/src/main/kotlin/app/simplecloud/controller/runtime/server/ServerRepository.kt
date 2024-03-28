@@ -10,128 +10,148 @@ import app.simplecloud.controller.shared.server.Server
 import java.util.concurrent.CompletableFuture
 
 class ServerRepository(
-    private val numericalIdRepository: ServerNumericalIdRepository
+  private val numericalIdRepository: ServerNumericalIdRepository
 ) : Repository<Server>() {
 
-    private val db = Database.get()
+  private val db = Database.get()
 
-    fun findServerById(id: String): ServerDefinition? {
-        return firstOrNull { it.uniqueId == id }?.toDefinition()
+  fun findServerById(id: String): ServerDefinition? {
+    return firstOrNull { it.uniqueId == id }?.toDefinition()
+  }
+
+  fun findServersByHostId(id: String): List<ServerDefinition> {
+    return filter { it.host == id }.map { it.toDefinition() }
+  }
+
+  fun findServersByGroup(group: String): List<ServerDefinition> {
+    return filter { server -> server.group == group }.map { server -> server.toDefinition() }
+  }
+
+  override fun load() {
+    clear()
+    val query = db.select().from(CLOUD_SERVERS).fetchInto(CLOUD_SERVERS)
+    query.map {
+      val propertiesQuery = db.select().from(CLOUD_SERVER_PROPERTIES).fetchInto(CLOUD_SERVER_PROPERTIES)
+      numericalIdRepository.saveNumericalId(it.groupName, it.numericalId)
+      add(
+        Server(
+          it.uniqueId,
+          it.groupName,
+          it.hostId,
+          it.numericalId,
+          it.templateId,
+          it.ip,
+          it.port.toLong(),
+          it.minimumMemory.toLong(),
+          it.maximumMemory.toLong(),
+          it.playerCount.toLong(),
+          propertiesQuery.map { item ->
+            item.key to item.value
+          }.toMap().toMutableMap(),
+          ServerState.valueOf(it.state)
+        )
+      )
     }
+  }
 
-    fun findServersByHostId(id: String): List<ServerDefinition> {
-        return filter { it.host == id }.map { it.toDefinition() }
+  override fun delete(element: Server): CompletableFuture<Boolean> {
+    val server = firstOrNull { it.uniqueId == element.uniqueId } ?: return CompletableFuture.completedFuture(false)
+    val canDelete =
+      db.deleteFrom(CLOUD_SERVER_PROPERTIES).where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(server.uniqueId))
+        .executeAsync().toCompletableFuture().thenApply {
+          return@thenApply true
+        }.exceptionally {
+          it.printStackTrace()
+          return@exceptionally false
+        }.get()
+    if (!canDelete) return CompletableFuture.completedFuture(false)
+    numericalIdRepository.removeNumericalId(server.group, server.numericalId)
+    return db.deleteFrom(CLOUD_SERVERS).where(CLOUD_SERVERS.UNIQUE_ID.eq(server.uniqueId)).executeAsync()
+      .toCompletableFuture().thenApply {
+        return@thenApply it > 0 && remove(server)
+      }.exceptionally {
+        it.printStackTrace()
+        return@exceptionally false
+      }
+  }
+
+  override fun save(element: Server) {
+    try {
+      val server = firstOrNull { it.uniqueId == element.uniqueId }
+      if (server != null) {
+        val index = indexOf(server)
+        removeAt(index)
+        add(index, element)
+      } else {
+        add(element)
+      }
+
+      numericalIdRepository.saveNumericalId(element.group, element.numericalId)
+
+      db.insertInto(
+        CLOUD_SERVERS,
+
+        CLOUD_SERVERS.UNIQUE_ID,
+        CLOUD_SERVERS.GROUP_NAME,
+        CLOUD_SERVERS.HOST_ID,
+        CLOUD_SERVERS.NUMERICAL_ID,
+        CLOUD_SERVERS.TEMPLATE_ID,
+        CLOUD_SERVERS.IP,
+        CLOUD_SERVERS.PORT,
+        CLOUD_SERVERS.MINIMUM_MEMORY,
+        CLOUD_SERVERS.MAXIMUM_MEMORY,
+        CLOUD_SERVERS.PLAYER_COUNT,
+        CLOUD_SERVERS.STATE,
+      )
+        .values(
+          element.uniqueId,
+          element.group,
+          element.host,
+          element.numericalId,
+          element.templateId,
+          element.ip,
+          element.port.toInt(),
+          element.minMemory.toInt(),
+          element.maxMemory.toInt(),
+          element.playerCount.toInt(),
+          element.state.toString()
+        )
+        .onDuplicateKeyUpdate()
+        .set(CLOUD_SERVERS.UNIQUE_ID, element.uniqueId)
+        .set(CLOUD_SERVERS.GROUP_NAME, element.group)
+        .set(CLOUD_SERVERS.HOST_ID, element.host)
+        .set(CLOUD_SERVERS.NUMERICAL_ID, element.numericalId)
+        .set(CLOUD_SERVERS.TEMPLATE_ID, element.templateId)
+        .set(CLOUD_SERVERS.IP, element.ip)
+        .set(CLOUD_SERVERS.PORT, element.port.toInt())
+        .set(CLOUD_SERVERS.MINIMUM_MEMORY, element.minMemory.toInt())
+        .set(CLOUD_SERVERS.MAXIMUM_MEMORY, element.maxMemory.toInt())
+        .set(CLOUD_SERVERS.PLAYER_COUNT, element.playerCount.toInt())
+        .set(CLOUD_SERVERS.STATE, element.state.toString())
+        .executeAsync()
+      element.properties.forEach {
+        db.insertInto(
+          CLOUD_SERVER_PROPERTIES,
+
+          CLOUD_SERVER_PROPERTIES.SERVER_ID,
+          CLOUD_SERVER_PROPERTIES.KEY,
+          CLOUD_SERVER_PROPERTIES.VALUE
+        )
+          .values(
+            element.uniqueId,
+            it.key,
+            it.value
+          )
+          .onDuplicateKeyUpdate()
+          .set(CLOUD_SERVER_PROPERTIES.SERVER_ID, element.uniqueId)
+          .set(CLOUD_SERVER_PROPERTIES.KEY, it.key)
+          .set(CLOUD_SERVER_PROPERTIES.VALUE, it.value)
+          .executeAsync()
+      }
+    } catch (e: Exception) {
+      e.printStackTrace()
+      println(e.message)
     }
-
-    fun findServersByGroup(group: String): List<ServerDefinition> {
-        return filter { server -> server.group == group }.map { server -> server.toDefinition() }
-    }
-
-    override fun load() {
-        clear()
-        val query = db.select().from(CLOUD_SERVERS).fetchInto(CLOUD_SERVERS)
-        query.map {
-            val propertiesQuery = db.select().from(CLOUD_SERVER_PROPERTIES).fetchInto(CLOUD_SERVER_PROPERTIES)
-            numericalIdRepository.saveNumericalId(it.groupName, it.numericalId)
-            add(
-                Server(
-                    it.uniqueId,
-                    it.groupName,
-                    it.hostId,
-                    it.numericalId,
-                    it.templateId,
-                    it.ip,
-                    it.port.toLong(),
-                    it.minimumMemory.toLong(),
-                    it.maximumMemory.toLong(),
-                    it.playerCount.toLong(),
-                    propertiesQuery.map { item ->
-                        item.key to item.value
-                    }.toMap().toMutableMap(),
-                    ServerState.valueOf(it.state)
-                )
-            )
-        }
-    }
-
-    override fun delete(element: Server): CompletableFuture<Boolean> {
-        val server = firstOrNull { it.uniqueId == element.uniqueId } ?: return CompletableFuture.completedFuture(false)
-        val canDelete =
-            db.deleteFrom(CLOUD_SERVER_PROPERTIES).where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(server.uniqueId))
-                .executeAsync().toCompletableFuture().thenApply {
-                    return@thenApply true
-                }.exceptionally {
-                    it.printStackTrace()
-                    return@exceptionally false
-                }.get()
-        if (!canDelete) return CompletableFuture.completedFuture(false)
-        numericalIdRepository.removeNumericalId(server.group, server.numericalId)
-        return db.deleteFrom(CLOUD_SERVERS).where(CLOUD_SERVERS.UNIQUE_ID.eq(server.uniqueId)).executeAsync()
-            .toCompletableFuture().thenApply {
-                return@thenApply it > 0 && remove(server)
-            }.exceptionally {
-                it.printStackTrace()
-                return@exceptionally false
-            }
-    }
-
-    override fun save(element: Server) {
-        try {
-            val server = firstOrNull { it.uniqueId == element.uniqueId }
-            if (server != null) {
-                val index = indexOf(server)
-                removeAt(index)
-                add(index, element)
-            } else {
-                add(element)
-            }
-
-            numericalIdRepository.saveNumericalId(element.group, element.numericalId)
-
-            db.insertInto(
-                CLOUD_SERVERS,
-
-                CLOUD_SERVERS.UNIQUE_ID,
-                CLOUD_SERVERS.GROUP_NAME,
-                CLOUD_SERVERS.HOST_ID,
-                CLOUD_SERVERS.NUMERICAL_ID,
-                CLOUD_SERVERS.TEMPLATE_ID,
-                CLOUD_SERVERS.IP,
-                CLOUD_SERVERS.PORT,
-                CLOUD_SERVERS.MINIMUM_MEMORY,
-                CLOUD_SERVERS.MAXIMUM_MEMORY,
-                CLOUD_SERVERS.PLAYER_COUNT,
-                CLOUD_SERVERS.STATE,
-            ).values(
-                element.uniqueId,
-                element.group,
-                element.host,
-                element.numericalId,
-                element.templateId,
-                element.ip,
-                element.port.toInt(),
-                element.minMemory.toInt(),
-                element.maxMemory.toInt(),
-                element.playerCount.toInt(),
-                element.state.toString()
-            ).onDuplicateKeyUpdate().set(CLOUD_SERVERS.UNIQUE_ID, element.uniqueId).executeAsync()
-            element.properties.forEach {
-                db.insertInto(
-                    CLOUD_SERVER_PROPERTIES,
-
-                    CLOUD_SERVER_PROPERTIES.SERVER_ID,
-                    CLOUD_SERVER_PROPERTIES.KEY,
-                    CLOUD_SERVER_PROPERTIES.VALUE
-                ).values(
-                    element.uniqueId,
-                    it.key,
-                    it.value
-                ).onDuplicateKeyUpdate().set(CLOUD_SERVER_PROPERTIES.SERVER_ID, element.uniqueId).executeAsync()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            println(e.message)
-        }
-    }
+  }
 
 }

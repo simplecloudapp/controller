@@ -4,7 +4,7 @@
  */
 
 CREATE TABLE IF NOT EXISTS cloud_servers(
-    unique_id varchar NOT NULL,
+    unique_id varchar NOT NULL PRIMARY KEY,
     group_name varchar NOT NULL,
     host_id varchar NOT NULL,
     numerical_id int NOT NULL,
