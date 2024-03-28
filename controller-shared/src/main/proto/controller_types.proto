@@ -40,10 +40,11 @@ message ServerHostDefinition {
 }
 
 enum ServerState {
-  STARTING = 0;
-  AVAILABLE = 1;
-  INGAME = 2;
-  STOPPING = 3;
+  PREPARING = 0;
+  STARTING = 1;
+  AVAILABLE = 2;
+  INGAME = 3;
+  STOPPING = 4;
 }
 
 message StatusResponse {
