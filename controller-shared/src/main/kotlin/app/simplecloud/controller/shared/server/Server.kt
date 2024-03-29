@@ -2,6 +2,7 @@ package app.simplecloud.controller.shared.server
 
 import app.simplecloud.controller.shared.proto.ServerDefinition
 import app.simplecloud.controller.shared.proto.ServerState
+import java.time.LocalDateTime
 
 data class Server(
     val uniqueId: String,
@@ -16,6 +17,8 @@ data class Server(
     val playerCount: Long,
     val properties: MutableMap<String, String>,
     val state: ServerState,
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime
 ) {
     fun toDefinition(): ServerDefinition {
         return ServerDefinition.newBuilder()
@@ -31,6 +34,8 @@ data class Server(
             .putAllProperties(properties)
             .setTemplateId(templateId)
             .setNumericalId(numericalId)
+            .setCreatedAt(createdAt.toString())
+            .setUpdatedAt(updatedAt.toString())
             .build()
     }
 
@@ -49,7 +54,9 @@ data class Server(
                 serverDefinition.maximumMemory,
                 serverDefinition.playerCount,
                 serverDefinition.propertiesMap,
-                serverDefinition.state
+                serverDefinition.state,
+                LocalDateTime.parse(serverDefinition.createdAt),
+                LocalDateTime.parse(serverDefinition.updatedAt)
             )
         }
 

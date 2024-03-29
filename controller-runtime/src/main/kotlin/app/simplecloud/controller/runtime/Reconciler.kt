@@ -7,9 +7,12 @@ import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.proto.ControllerServerServiceGrpc
 import app.simplecloud.controller.shared.proto.GroupNameRequest
+import app.simplecloud.controller.shared.proto.ServerIdRequest
 import app.simplecloud.controller.shared.proto.ServerState
+import app.simplecloud.controller.shared.server.Server
 import io.grpc.ManagedChannel
 import org.apache.logging.log4j.LogManager
+import java.time.LocalDateTime
 
 class Reconciler(
   private val groupRepository: GroupRepository,
@@ -17,6 +20,8 @@ class Reconciler(
   private val serverHostRepository: ServerHostRepository,
   managedChannel: ManagedChannel,
 ) {
+
+  val INACTIVE_SERVER_TIME = 5L
 
   private val serverStub = ControllerServerServiceGrpc.newFutureStub(managedChannel)
   private val logger = LogManager.getLogger(Reconciler::class.java)
@@ -32,13 +37,34 @@ class Reconciler(
 
       logger.info("Reconciling group ${group.name} with ${servers.size} servers, $availableServerCount available servers")
 
-      cleanupServers()
+      cleanupServers(group, servers, availableServerCount)
       startServers(group, availableServerCount, servers.size)
     }
   }
 
-  private fun cleanupServers() {
+  private fun cleanupServers(group: Group, servers: List<Server>, availableServerCount: Int) {
+    val hasMoreServersThenNeeded = availableServerCount > group.minOnlineCount
+    servers
+      .filter { it.state == ServerState.AVAILABLE }
+      .forEach { server ->
+        if (hasMoreServersThenNeeded && !wasUpdatedRecently(server)) {
+          logger.info("Stopping server ${server.uniqueId} of group ${group.name}")
+          serverStub.stopServer(
+            ServerIdRequest.newBuilder()
+              .setId(server.uniqueId)
+              .build()
+          ).toCompletable()
+            .thenApply {
+              logger.info("Stopped server ${server.uniqueId} of group ${group.name}")
+            }.exceptionally {
+              logger.error("Could not stop server ${server.uniqueId} of group ${group.name}: ${it.message}")
+            }
+        }
+      }
+  }
 
+  private fun wasUpdatedRecently(server: Server): Boolean {
+    return server.updatedAt.isAfter(LocalDateTime.now().minusMinutes(INACTIVE_SERVER_TIME))
   }
 
   private fun startServers(
@@ -61,6 +87,7 @@ class Reconciler(
       .thenApply {
         logger.info("Started new instance ${it.groupName}-${it.numericalId}/${it.uniqueId} of group ${group.name} on ${it.ip}:${it.port}")
       }.exceptionally {
+        it.printStackTrace()
         logger.error("Could not start a new instance of group ${group.name}: ${it.message}")
       }
   }

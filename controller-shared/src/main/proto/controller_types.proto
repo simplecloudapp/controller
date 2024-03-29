@@ -31,6 +31,8 @@ message ServerDefinition {
   uint64 player_count = 10;
   map<string, string> properties = 11;
   ServerState state = 12;
+  string created_at = 13;
+  string updated_at = 14;
 }
 
 message ServerHostDefinition {
