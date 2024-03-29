@@ -19,10 +19,16 @@ message GetServersByGroupResponse {
   repeated ServerDefinition servers = 1;
 }
 
+message ServerUpdateRequest {
+  ServerDefinition server = 1;
+  bool deleted = 2;
+}
+
 service ControllerServerService {
   rpc getServersByGroup(GroupNameRequest) returns (GetServersByGroupResponse);
   rpc getServerById(ServerIdRequest) returns (ServerDefinition);
   rpc startServer(GroupNameRequest) returns (ServerDefinition);
   rpc stopServer(ServerIdRequest) returns (StatusResponse);
+  rpc updateServer(ServerUpdateRequest) returns (StatusResponse);
   rpc attachServerHost(ServerHostDefinition) returns (StatusResponse);
 }

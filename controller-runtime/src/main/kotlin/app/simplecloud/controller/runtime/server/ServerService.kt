@@ -10,6 +10,7 @@ import app.simplecloud.controller.shared.proto.*
 import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.controller.shared.server.ServerFactory
 import app.simplecloud.controller.shared.status.ApiResponse
+import com.google.protobuf.Api
 import io.grpc.Context
 import io.grpc.stub.StreamObserver
 import org.apache.logging.log4j.LogManager
@@ -43,7 +44,24 @@ class ServerService(
         }
       }
     }
+  }
 
+  override fun updateServer(request: ServerUpdateRequest, responseObserver: StreamObserver<StatusResponse>) {
+    val deleted = request.deleted
+    val server = Server.fromDefinition(request.server)
+    if(!deleted) {
+      serverRepository.save(server)
+      responseObserver.onNext(ApiResponse("success").toDefinition())
+      responseObserver.onCompleted()
+    }else {
+      serverRepository.delete(server).thenApply {
+        responseObserver.onNext(ApiResponse("success").toDefinition())
+        responseObserver.onCompleted()
+      }.exceptionally {
+        responseObserver.onNext(ApiResponse("error").toDefinition())
+        responseObserver.onCompleted()
+      }
+    }
   }
 
   override fun getServerById(request: ServerIdRequest, responseObserver: StreamObserver<ServerDefinition>) {
