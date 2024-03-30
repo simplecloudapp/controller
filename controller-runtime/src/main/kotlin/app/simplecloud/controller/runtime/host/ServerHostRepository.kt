@@ -26,7 +26,9 @@ class ServerHostRepository : Repository<ServerHost>() {
 
     fun areServerHostsAvailable(): Boolean {
         return any {
-            val state = it.endpoint.getState(true)
+            val channel = it.createChannel()
+            val state = channel.getState(true)
+            channel.shutdown()
             state == ConnectivityState.IDLE || state == ConnectivityState.READY
         }
     }

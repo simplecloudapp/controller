@@ -32,15 +32,19 @@ class ServerService(
     responseObserver.onNext(ApiResponse("success").toDefinition())
     responseObserver.onCompleted()
     Context.current().fork().run {
-      val stub = ServerHostServiceGrpc.newFutureStub(serverHost.endpoint)
+      val channel = serverHost.createChannel()
+      val stub = ServerHostServiceGrpc.newFutureStub(channel)
       serverRepository.filter { it.host == serverHost.id }.forEach {
         logger.info("Reattaching Server ${it.uniqueId} of group ${it.group}...")
-        val status = ApiResponse.fromDefinition(stub.reattachServer(it.toDefinition()).toCompletable().get())
-        if (status.status == "success") {
-          logger.info("Success!")
-        } else {
-          logger.error("Server was found to be offline, unregistering...")
-          serverRepository.delete(it)
+        stub.reattachServer(it.toDefinition()).toCompletable().thenApply { response ->
+          val status = ApiResponse.fromDefinition(response)
+          if (status.status == "success") {
+            logger.info("Success!")
+          } else {
+            logger.error("Server was found to be offline, unregistering...")
+            serverRepository.delete(it)
+          }
+          channel.shutdown()
         }
       }
     }
@@ -86,7 +90,8 @@ class ServerService(
       responseObserver.onError(ServerHostException("No server host found, could not start server."))
       return
     }
-    val stub = ServerHostServiceGrpc.newFutureStub(host.endpoint)
+    val channel = host.createChannel()
+    val stub = ServerHostServiceGrpc.newFutureStub(channel)
     val groupDefinition = groupRepository.findGroupByName(request.name)
     if (groupDefinition == null) {
       responseObserver.onError(IllegalArgumentException("No group was found matching the group name."))
@@ -108,11 +113,13 @@ class ServerService(
       serverRepository.save(Server.fromDefinition(it))
       responseObserver.onNext(it)
       responseObserver.onCompleted()
+      channel.shutdown()
       return@thenApply
     }.exceptionally {
       serverRepository.delete(server)
       numericalIdRepository.removeNumericalId(groupDefinition.name, numericalId)
       responseObserver.onError(ServerHostException("Could not start server, aborting."))
+      channel.shutdown()
     }
   }
 
@@ -127,13 +134,15 @@ class ServerService(
       responseObserver.onError(ServerHostException("No server host was found matching this server."))
       return
     }
-    val stub = ServerHostServiceGrpc.newFutureStub(host.endpoint)
+    val channel = host.createChannel()
+    val stub = ServerHostServiceGrpc.newFutureStub(channel)
     stub.stopServer(server).toCompletable().thenApply {
       if (it.status == "success") {
         serverRepository.delete(Server.fromDefinition(server))
       }
       responseObserver.onNext(it)
       responseObserver.onCompleted()
+      channel.shutdown()
     }
   }
 

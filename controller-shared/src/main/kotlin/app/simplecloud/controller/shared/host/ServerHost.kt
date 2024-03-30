@@ -31,10 +31,8 @@ data class ServerHost(
         }
     }
 
-    @Transient
-    val endpoint: ManagedChannel = createChannel()
 
-    private fun createChannel(): ManagedChannel {
+    fun createChannel(): ManagedChannel {
         return ManagedChannelBuilder.forAddress(host, port).usePlaintext().build()
     }
 
