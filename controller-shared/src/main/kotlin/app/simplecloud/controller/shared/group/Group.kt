@@ -1,11 +1,13 @@
 package app.simplecloud.controller.shared.group
 
 import app.simplecloud.controller.shared.proto.GroupDefinition
+import app.simplecloud.controller.shared.proto.ServerType
 import org.spongepowered.configurate.objectmapping.ConfigSerializable
 
 @ConfigSerializable
 data class Group(
         val name: String,
+        val type: ServerType,
         val serverUrl: String,
         val minMemory: Long,
         val maxMemory: Long,
@@ -35,6 +37,7 @@ data class Group(
         fun fromDefinition(groupDefinition: GroupDefinition): Group {
             return Group(
                 groupDefinition.name,
+                groupDefinition.type,
                 groupDefinition.serverUrl,
                 groupDefinition.minimumMemory,
                 groupDefinition.maximumMemory,

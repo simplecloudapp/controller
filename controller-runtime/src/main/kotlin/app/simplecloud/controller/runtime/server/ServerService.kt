@@ -84,6 +84,16 @@ class ServerService(
     responseObserver.onCompleted()
   }
 
+  override fun getServersByType(
+    request: ServerTypeRequest,
+    responseObserver: StreamObserver<GetServersByGroupResponse>
+  ) {
+    val servers = serverRepository.findServersByType(request.type).map { it.toDefinition() }
+    val response = GetServersByGroupResponse.newBuilder().addAllServers(servers).build()
+    responseObserver.onNext(response)
+    responseObserver.onCompleted()
+  }
+
   override fun startServer(request: GroupNameRequest, responseObserver: StreamObserver<ServerDefinition>) {
     val host = hostRepository.findLaziestServerHost(serverRepository)
     if (host == null) {
