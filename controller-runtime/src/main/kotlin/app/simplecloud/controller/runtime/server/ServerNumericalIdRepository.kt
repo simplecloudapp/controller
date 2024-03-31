@@ -1,12 +1,10 @@
 package app.simplecloud.controller.runtime.server
 
-import com.google.common.collect.ArrayListMultimap
-import com.google.common.collect.Multimaps
+import java.util.concurrent.ConcurrentHashMap
 
 class ServerNumericalIdRepository {
 
-
-  private val numericalIds = Multimaps.synchronizedListMultimap(ArrayListMultimap.create<String, Int>())
+  private val numericalIds = ConcurrentHashMap<String, Set<Int>>()
 
   @Synchronized
   fun findNextNumericalId(group: String): Int {
@@ -20,15 +18,16 @@ class ServerNumericalIdRepository {
   }
 
   fun saveNumericalId(group: String, id: Int) {
-    numericalIds.put(group, id)
+    numericalIds.compute(group) { _, v -> v?.plus(id) ?: setOf(id) }
   }
 
-  fun removeNumericalId(group: String, id: Int) {
-    numericalIds.remove(group, id)
+  @Synchronized
+  fun removeNumericalId(group: String, id: Int): Boolean {
+    return numericalIds.computeIfPresent(group) { _, v -> v.minus(id) } != null
   }
 
   private fun findNumericalIds(group: String): List<Int> {
-    return numericalIds.get(group)
+    return numericalIds[group]?.toList() ?: emptyList()
   }
 
 }
