@@ -8,3 +8,5 @@
     max-online-count: 2
     properties:
         configurator: spigot
+        max-players: 20
+        max-startup-seconds: 20
