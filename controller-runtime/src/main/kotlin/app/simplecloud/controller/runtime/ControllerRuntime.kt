@@ -44,7 +44,7 @@ class ControllerRuntime(
 
   private fun loadDB() {
     logger.info("Loading database configuration...")
-    databaseConfig = DatabaseConfig.load(controllerStartCommand.databaseConfigPath)!!
+    databaseConfig = DatabaseConfig.load(Path.of(controllerStartCommand.databaseConfigPath))!!
     logger.info("Connecting database...")
     Database.init(databaseConfig)
     serverRepository = ServerRepository(numericalIdRepository)
