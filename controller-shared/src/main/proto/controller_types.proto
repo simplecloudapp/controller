@@ -7,32 +7,34 @@ option java_multiple_files = true;
 
 message GroupDefinition {
   string name = 1;
-  string server_url = 2;
-  string template_id = 3;
-  uint64 minimum_memory = 4;
-  uint64 maximum_memory = 5;
-  uint64 start_port = 6;
-  uint64 online_servers = 7;
-  uint64 minimum_online_count = 8;
-  uint64 maximum_online_count = 9;
-  map<string, string> properties = 10;
+  ServerType type = 2;
+  string server_url = 3;
+  string template_id = 4;
+  uint64 minimum_memory = 5;
+  uint64 maximum_memory = 6;
+  uint64 start_port = 7;
+  uint64 online_servers = 8;
+  uint64 minimum_online_count = 9;
+  uint64 maximum_online_count = 10;
+  map<string, string> properties = 11;
 }
 
 message ServerDefinition {
   string unique_id = 1;
-  string group_name = 2;
-  string host_id = 3;
-  uint32 numerical_id = 4;
-  string template_id = 5;
-  string ip = 6;
-  uint64 port = 7;
-  uint64 minimum_memory = 8;
-  uint64 maximum_memory = 9;
-  uint64 player_count = 10;
-  map<string, string> properties = 11;
-  ServerState state = 12;
-  string created_at = 13;
-  string updated_at = 14;
+  ServerType type = 2;
+  string group_name = 3;
+  string host_id = 4;
+  uint32 numerical_id = 5;
+  string template_id = 6;
+  string ip = 7;
+  uint64 port = 8;
+  uint64 minimum_memory = 9;
+  uint64 maximum_memory = 10;
+  uint64 player_count = 11;
+  map<string, string> properties = 12;
+  ServerState state = 13;
+  string created_at = 14;
+  string updated_at = 15;
 }
 
 message ServerHostDefinition {
@@ -47,6 +49,12 @@ enum ServerState {
   AVAILABLE = 2;
   INGAME = 3;
   STOPPING = 4;
+}
+
+enum ServerType {
+  SERVER = 0;
+  PROXY = 1;
+  OTHER = 2;
 }
 
 message StatusResponse {

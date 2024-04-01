@@ -45,6 +45,7 @@ class ServerFactory {
         return Server(
             uniqueId = UUID.randomUUID().toString().replace("-", ""),
             port = port ?: -1,
+            type = group.type,
             group = group.name,
             minMemory = group.minMemory,
             maxMemory = group.maxMemory,

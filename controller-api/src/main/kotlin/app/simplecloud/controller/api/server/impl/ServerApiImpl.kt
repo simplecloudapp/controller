@@ -7,6 +7,8 @@ import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.proto.ControllerServerServiceGrpc
 import app.simplecloud.controller.shared.proto.GroupNameRequest
 import app.simplecloud.controller.shared.proto.ServerIdRequest
+import app.simplecloud.controller.shared.proto.ServerType
+import app.simplecloud.controller.shared.proto.ServerTypeRequest
 import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.controller.shared.status.ApiResponse
 import com.google.protobuf.Api
@@ -43,6 +45,17 @@ class ServerApiImpl : ServerApi {
 
     override fun getServersByGroup(group: Group): CompletableFuture<List<Server>> {
         return getServersByGroup(group.name)
+    }
+
+    override fun getServersByType(type: ServerType): CompletableFuture<List<Server>> {
+        return serverServiceStub.getServersByType(
+            ServerTypeRequest.newBuilder()
+                .setType(type)
+                .build()
+        ).toCompletable()
+            .thenApply {
+                Server.fromDefinition(it.serversList)
+            }
     }
 
     override fun startServer(groupName: String): CompletableFuture<Server?> {

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS cloud_servers(
     maximum_memory int NOT NULL,
     player_count int NOT NULL,
     state varchar NOT NULL,
+    type varchar NOT NULL,
     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

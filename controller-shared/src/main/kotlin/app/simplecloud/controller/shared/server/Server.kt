@@ -2,10 +2,12 @@ package app.simplecloud.controller.shared.server
 
 import app.simplecloud.controller.shared.proto.ServerDefinition
 import app.simplecloud.controller.shared.proto.ServerState
+import app.simplecloud.controller.shared.proto.ServerType
 import java.time.LocalDateTime
 
 data class Server(
     val uniqueId: String,
+    val type: ServerType,
     val group: String,
     val host: String?,
     val numericalId: Int,
@@ -23,6 +25,7 @@ data class Server(
     fun toDefinition(): ServerDefinition {
         return ServerDefinition.newBuilder()
             .setUniqueId(uniqueId)
+            .setType(type)
             .setGroupName(group)
             .setHostId(host)
             .setIp(ip)
@@ -44,6 +47,7 @@ data class Server(
         fun fromDefinition(serverDefinition: ServerDefinition): Server {
             return Server(
                 serverDefinition.uniqueId,
+                serverDefinition.type,
                 serverDefinition.groupName,
                 serverDefinition.hostId,
                 serverDefinition.numericalId,

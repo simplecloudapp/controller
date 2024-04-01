@@ -5,6 +5,7 @@ import app.simplecloud.controller.shared.db.Database
 import app.simplecloud.controller.shared.db.Tables.CLOUD_SERVERS
 import app.simplecloud.controller.shared.db.Tables.CLOUD_SERVER_PROPERTIES
 import app.simplecloud.controller.shared.proto.ServerState
+import app.simplecloud.controller.shared.proto.ServerType
 import app.simplecloud.controller.shared.server.Server
 import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
@@ -27,6 +28,10 @@ class ServerRepository(
     return filter { server -> server.group == group }
   }
 
+  fun findServersByType(type: ServerType): List<Server> {
+    return filter { server -> server.type == type }
+  }
+
   override fun load() {
     clear()
     val query = db.select().from(CLOUD_SERVERS).fetchInto(CLOUD_SERVERS)
@@ -36,6 +41,7 @@ class ServerRepository(
       add(
         Server(
           it.uniqueId,
+          ServerType.valueOf(it.type),
           it.groupName,
           it.hostId,
           it.numericalId,
@@ -94,6 +100,7 @@ class ServerRepository(
       CLOUD_SERVERS,
 
       CLOUD_SERVERS.UNIQUE_ID,
+      CLOUD_SERVERS.TYPE,
       CLOUD_SERVERS.GROUP_NAME,
       CLOUD_SERVERS.HOST_ID,
       CLOUD_SERVERS.NUMERICAL_ID,
@@ -109,6 +116,7 @@ class ServerRepository(
     )
       .values(
         element.uniqueId,
+        element.type.toString(),
         element.group,
         element.host,
         element.numericalId,
@@ -124,6 +132,7 @@ class ServerRepository(
       )
       .onDuplicateKeyUpdate()
       .set(CLOUD_SERVERS.UNIQUE_ID, element.uniqueId)
+      .set(CLOUD_SERVERS.TYPE, element.type.toString())
       .set(CLOUD_SERVERS.GROUP_NAME, element.group)
       .set(CLOUD_SERVERS.HOST_ID, element.host)
       .set(CLOUD_SERVERS.NUMERICAL_ID, element.numericalId)
