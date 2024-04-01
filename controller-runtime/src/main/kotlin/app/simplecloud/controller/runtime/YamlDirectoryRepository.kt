@@ -11,6 +11,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardWatchEventKinds
 import java.nio.file.WatchEvent
+import kotlin.io.path.name
 
 abstract class YamlDirectoryRepository<I, T>(
   private val directory: Path,
@@ -38,19 +39,22 @@ abstract class YamlDirectoryRepository<I, T>(
     return entities.values.toList()
   }
 
-  fun loadAll() {
-    logger.info("Loading all entities from $directory")
+  fun loadAll(): List<String> {
     if (!directory.toFile().exists()) {
       directory.toFile().mkdir()
     }
+
+    val fileNames = mutableListOf<String>()
 
     Files.list(directory)
       .filter { !it.toFile().isDirectory && it.toString().endsWith(".yml") }
       .forEach {
         load(it.toFile())
+        fileNames.add(it.name)
       }
 
     registerWatcher()
+    return fileNames
   }
 
   private fun load(file: File) {
@@ -58,7 +62,6 @@ abstract class YamlDirectoryRepository<I, T>(
     val node = loader.load(ConfigurationOptions.defaults())
     val entity = node.get(clazz) ?: return
     entities[file] = entity
-    logger.info("Loaded $file")
   }
 
   private fun delete(file: File): Boolean {
