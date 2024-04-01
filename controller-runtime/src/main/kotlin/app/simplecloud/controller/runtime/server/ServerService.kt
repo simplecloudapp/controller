@@ -4,13 +4,11 @@ import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostException
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.shared.future.toCompletable
-import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.host.ServerHost
 import app.simplecloud.controller.shared.proto.*
 import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.controller.shared.server.ServerFactory
 import app.simplecloud.controller.shared.status.ApiResponse
-import com.google.protobuf.Api
 import io.grpc.Context
 import io.grpc.stub.StreamObserver
 import org.apache.logging.log4j.LogManager
@@ -53,12 +51,14 @@ class ServerService(
   override fun updateServer(request: ServerUpdateRequest, responseObserver: StreamObserver<StatusResponse>) {
     val deleted = request.deleted
     val server = Server.fromDefinition(request.server)
-    if(!deleted) {
+    if (!deleted) {
       serverRepository.save(server)
       responseObserver.onNext(ApiResponse("success").toDefinition())
       responseObserver.onCompleted()
-    }else {
+    } else {
+      logger.info("Deleting server ${server.uniqueId} of group ${request.server.groupName}...")
       serverRepository.delete(server).thenApply {
+        logger.info("Deleted server ${server.uniqueId} of group ${request.server.groupName}.")
         responseObserver.onNext(ApiResponse("success").toDefinition())
         responseObserver.onCompleted()
       }.exceptionally {
@@ -92,21 +92,21 @@ class ServerService(
     }
     val channel = host.createChannel()
     val stub = ServerHostServiceGrpc.newFutureStub(channel)
-    val groupDefinition = groupRepository.findGroupByName(request.name)
-    if (groupDefinition == null) {
+    val group = groupRepository.find(request.name)
+    if (group == null) {
       responseObserver.onError(IllegalArgumentException("No group was found matching the group name."))
       return
     }
 
-    val numericalId = numericalIdRepository.findNextNumericalId(groupDefinition.name)
+    val numericalId = numericalIdRepository.findNextNumericalId(group.name)
     val server = ServerFactory.builder()
-      .setGroup(Group.fromDefinition(groupDefinition))
+      .setGroup(group)
       .setNumericalId(numericalId.toLong())
       .build()
     serverRepository.save(server)
     stub.startServer(
       StartServerRequest.newBuilder()
-        .setGroup(groupDefinition)
+        .setGroup(group.toDefinition())
         .setServer(server.toDefinition())
         .build()
     ).toCompletable().thenApply {
@@ -117,7 +117,7 @@ class ServerService(
       return@thenApply
     }.exceptionally {
       serverRepository.delete(server)
-      numericalIdRepository.removeNumericalId(groupDefinition.name, numericalId)
+      numericalIdRepository.removeNumericalId(group.name, numericalId)
       responseObserver.onError(ServerHostException("Could not start server, aborting."))
       channel.shutdown()
     }

@@ -13,9 +13,14 @@ class GroupService(
         request: GetGroupByNameRequest,
         responseObserver: StreamObserver<GetGroupByNameResponse>
     ) {
-        val group = groupRepository.findGroupByName(request.name)
+        val group = groupRepository.find(request.name)
+        if (group == null) {
+            responseObserver.onError(Exception("Group not found"))
+            return
+        }
+
         val response = GetGroupByNameResponse.newBuilder()
-            .setGroup(group)
+            .setGroup(group.toDefinition())
             .build()
 
         responseObserver.onNext(response)
@@ -34,18 +39,16 @@ class GroupService(
     }
 
     override fun deleteGroupByName(request: GetGroupByNameRequest, responseObserver: StreamObserver<StatusResponse>) {
-        val groupDefinition = groupRepository.findGroupByName(request.name)
-        if (groupDefinition == null) {
+        val group = groupRepository.find(request.name)
+        if (group == null) {
             responseObserver.onNext(ApiResponse(status = "error").toDefinition())
             responseObserver.onCompleted()
             return
         }
-        val group = Group.fromDefinition(groupDefinition)
         try {
-            groupRepository.delete(group).thenApply {
-                responseObserver.onNext(ApiResponse(status = if (it) "success" else "error").toDefinition())
-                responseObserver.onCompleted()
-            }
+            val successfullyDeleted = groupRepository.delete(group)
+            responseObserver.onNext(ApiResponse(status = if (successfullyDeleted) "success" else "error").toDefinition())
+            responseObserver.onCompleted()
         } catch (e: Exception) {
             responseObserver.onError(e)
         }

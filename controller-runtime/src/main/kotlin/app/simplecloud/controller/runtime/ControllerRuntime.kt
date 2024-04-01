@@ -14,6 +14,7 @@ import io.grpc.Server
 import io.grpc.ServerBuilder
 import kotlinx.coroutines.*
 import org.apache.logging.log4j.LogManager
+import java.nio.file.Path
 import kotlin.concurrent.thread
 
 class ControllerRuntime {
@@ -29,7 +30,8 @@ class ControllerRuntime {
     private lateinit var server: Server
 
     fun start(args: MutableMap<String, String>) {
-        groupRepository = GroupRepository("/groups.yml", args.getOrDefault("groups-path", null))
+        groupRepository = GroupRepository(Path.of(args.getOrDefault("groups-path", "groups")))
+        groupRepository.loadAll()
         logger.info("Starting database...")
         loadDB()
         logger.info("Starting controller...")

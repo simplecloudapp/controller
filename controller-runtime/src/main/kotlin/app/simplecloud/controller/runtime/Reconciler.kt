@@ -27,7 +27,7 @@ class Reconciler(
   private val logger = LogManager.getLogger(Reconciler::class.java)
 
   fun reconcile() {
-    groupRepository.forEach { group ->
+    groupRepository.findAll().forEach { group ->
       val servers = serverRepository.findServersByGroup(group.name)
       val availableServerCount = servers.count { server ->
         server.state == ServerState.AVAILABLE

@@ -1,14 +1,21 @@
 package app.simplecloud.controller.runtime.group
 
-import app.simplecloud.controller.runtime.YamlRepository
+import app.simplecloud.controller.runtime.YamlDirectoryRepository
 import app.simplecloud.controller.shared.group.Group
-import app.simplecloud.controller.shared.proto.GroupDefinition
+import java.nio.file.Path
 
-class GroupRepository(path: String, parent: String?) : YamlRepository<Group>(if(parent != null) "$parent$path" else path, Group::class.java) {
-    fun findGroupByName(name: String): GroupDefinition? {
-        return firstOrNull { it.name == name }?.toDefinition()
+class GroupRepository(
+    path: Path
+): YamlDirectoryRepository<String, Group>(path, Group::class.java) {
+    override fun getFileName(identifier: String): String {
+        return "$identifier.yml"
     }
-    override fun findIndex(element: Group): Int {
-        return indexOf(firstOrNull { it.name == element.name })
+
+    override fun find(identifier: String): Group? {
+        return entities.values.find { it.name == identifier }
+    }
+
+    override fun save(entity: Group) {
+        save(getFileName(entity.name), entity)
     }
 }

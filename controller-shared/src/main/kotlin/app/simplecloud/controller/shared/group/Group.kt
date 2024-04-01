@@ -5,15 +5,15 @@ import org.spongepowered.configurate.objectmapping.ConfigSerializable
 
 @ConfigSerializable
 data class Group(
-        val name: String,
-        val serverUrl: String,
-        val minMemory: Long,
-        val maxMemory: Long,
-        val startPort: Long,
-        @Transient val onlineServers: Long?,
-        val minOnlineCount: Long,
-        val maxOnlineCount: Long,
-        val properties: Map<String, String>,
+        val name: String = "",
+        val serverUrl: String = "",
+        val minMemory: Long = 0,
+        val maxMemory: Long = 0,
+        val startPort: Long = 0,
+        @Transient val onlineServers: Long? = 0,
+        val minOnlineCount: Long = 0,
+        val maxOnlineCount: Long = 0,
+        val properties: Map<String, String> = mapOf()
 ) {
 
     fun toDefinition(): GroupDefinition {
