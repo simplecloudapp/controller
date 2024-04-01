@@ -109,10 +109,12 @@ class ServerService(
     }
 
     val numericalId = numericalIdRepository.findNextNumericalId(groupDefinition.name)
+    println(groupDefinition.type)
     val server = ServerFactory.builder()
       .setGroup(Group.fromDefinition(groupDefinition))
       .setNumericalId(numericalId.toLong())
       .build()
+    println(server.type)
     serverRepository.save(server)
     stub.startServer(
       StartServerRequest.newBuilder()

@@ -21,6 +21,7 @@ data class Group(
     fun toDefinition(): GroupDefinition {
         return GroupDefinition.newBuilder()
             .setName(name)
+            .setType(type)
             .setServerUrl(serverUrl)
             .setMinimumMemory(minMemory)
             .setMaximumMemory(maxMemory)

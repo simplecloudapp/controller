@@ -25,6 +25,7 @@ data class Server(
     fun toDefinition(): ServerDefinition {
         return ServerDefinition.newBuilder()
             .setUniqueId(uniqueId)
+            .setType(type)
             .setGroupName(group)
             .setHostId(host)
             .setIp(ip)
