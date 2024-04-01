@@ -103,7 +103,7 @@ abstract class YamlDirectoryRepository<I, T>(
         for (event in key.pollEvents()) {
           val path = event.context() as? Path ?: continue
           val resolvedPath = directory.resolve(path)
-          if (Files.isDirectory(resolvedPath)) {
+          if (Files.isDirectory(resolvedPath) || !resolvedPath.toString().endsWith(".yml")) {
             continue
           }
           val kind = event.kind()
