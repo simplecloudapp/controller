@@ -23,7 +23,7 @@ class Reconciler(
     managedChannel: ManagedChannel,
 ) {
 
-    val INACTIVE_SERVER_TIME = 5L
+    private val INACTIVE_SERVER_TIME = 5L
 
     private val serverStub = ControllerServerServiceGrpc.newFutureStub(managedChannel)
     private val logger = LogManager.getLogger(Reconciler::class.java)
@@ -36,8 +36,6 @@ class Reconciler(
                         || server.state == ServerState.STARTING
                         || server.state == ServerState.PREPARING
             }
-
-            logger.info("Reconciling group ${group.name} with ${servers.size} servers, $availableServerCount available servers")
 
             cleanupServers(group, servers, availableServerCount)
             cleanupNumericalIds(group, servers)

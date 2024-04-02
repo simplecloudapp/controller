@@ -85,16 +85,13 @@ class ServerRepository(
             }
     }
 
+    @Synchronized
     override fun save(element: Server) {
         val server = firstOrNull { it.uniqueId == element.uniqueId }
         if (server != null) {
-            val index = indexOf(server)
-            removeAt(index)
-            add(index, element)
-        } else {
-            add(element)
+            remove(server)
         }
-
+        add(element)
         numericalIdRepository.saveNumericalId(element.group, element.numericalId)
 
         val currentTimestamp = LocalDateTime.now()
