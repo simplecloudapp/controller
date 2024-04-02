@@ -28,7 +28,13 @@ class ControllerRuntime(
     private val numericalIdRepository = ServerNumericalIdRepository()
     private val serverRepository = ServerRepository(database, numericalIdRepository)
     private val hostRepository = ServerHostRepository()
-    private val reconciler = Reconciler(groupRepository, serverRepository, hostRepository, createManagedChannel())
+    private val reconciler = Reconciler(
+        groupRepository,
+        serverRepository,
+        hostRepository,
+        numericalIdRepository,
+        createManagedChannel()
+    )
     private val server = createGrpcServerFromEnv()
 
     fun start() {

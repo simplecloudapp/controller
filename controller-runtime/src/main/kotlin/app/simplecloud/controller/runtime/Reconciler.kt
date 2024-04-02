@@ -2,6 +2,7 @@ package app.simplecloud.controller.runtime
 
 import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostRepository
+import app.simplecloud.controller.runtime.server.ServerNumericalIdRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
@@ -18,6 +19,7 @@ class Reconciler(
     private val groupRepository: GroupRepository,
     private val serverRepository: ServerRepository,
     private val serverHostRepository: ServerHostRepository,
+    private val numericalIdRepository: ServerNumericalIdRepository,
     managedChannel: ManagedChannel,
 ) {
 
@@ -38,6 +40,8 @@ class Reconciler(
             logger.info("Reconciling group ${group.name} with ${servers.size} servers, $availableServerCount available servers")
 
             cleanupServers(group, servers, availableServerCount)
+            cleanupNumericalIds(group, servers)
+
             startServers(group, availableServerCount, servers.size)
         }
     }
@@ -61,6 +65,16 @@ class Reconciler(
                         }
                 }
             }
+    }
+
+    private fun cleanupNumericalIds(group: Group, servers: List<Server>) {
+        val groupName = group.name
+        val usedNumericalIds = servers.map { it.numericalId }
+        val numericalIds = numericalIdRepository.findNumericalIds(groupName)
+
+        val unusedNumericalIds = numericalIds.filter { !usedNumericalIds.contains(it) }.toSet()
+        numericalIdRepository.removeNumericalIds(groupName, unusedNumericalIds)
+        logger.info("Removed ${unusedNumericalIds.size} unused numerical ids for group $groupName")
     }
 
     private fun wasUpdatedRecently(server: Server): Boolean {

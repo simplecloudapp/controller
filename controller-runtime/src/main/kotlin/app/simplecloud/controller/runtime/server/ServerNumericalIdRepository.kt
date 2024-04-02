@@ -26,8 +26,12 @@ class ServerNumericalIdRepository {
         return numericalIds.computeIfPresent(group) { _, v -> v.minus(id) } != null
     }
 
-    private fun findNumericalIds(group: String): List<Int> {
-        return numericalIds[group]?.toList() ?: emptyList()
+    fun removeNumericalIds(group: String, ids: Set<Int>) {
+        numericalIds.remove(group, ids)
+    }
+
+    fun findNumericalIds(group: String): Set<Int> {
+        return numericalIds[group] ?: emptySet()
     }
 
 }
