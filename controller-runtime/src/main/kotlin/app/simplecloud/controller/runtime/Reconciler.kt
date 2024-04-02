@@ -34,9 +34,6 @@ class Reconciler(
           || server.state == ServerState.STARTING
           || server.state == ServerState.PREPARING
       }
-
-      logger.info("Reconciling group ${group.name} with ${servers.size} servers, $availableServerCount available servers")
-
       cleanupServers(group, servers, availableServerCount)
       startServers(group, availableServerCount, servers.size)
     }
