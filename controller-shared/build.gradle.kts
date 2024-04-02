@@ -1,18 +1,16 @@
-import com.google.protobuf.gradle.*
+import com.google.protobuf.gradle.id
 
 plugins {
     alias(libs.plugins.protobuf)
-    id("org.jooq.jooq-codegen-gradle") version "3.19.3"
+    alias(libs.plugins.jooqCodegen)
 }
 
 dependencies {
     api(rootProject.libs.bundles.proto)
-    api("org.jooq:jooq:3.19.3")
-    api("org.jooq:jooq-meta:3.19.3")
-    api("org.spongepowered:configurate-yaml:4.0.0")
-    api("org.spongepowered:configurate-extra-kotlin:4.1.2")
-    api("org.xerial:sqlite-jdbc:3.44.1.0")
-    jooqCodegen("org.jooq:jooq-meta-extensions:3.19.3")
+    api(rootProject.libs.bundles.jooq)
+    api(rootProject.libs.bundles.configurate)
+    api(rootProject.libs.sqliteJdbc)
+    jooqCodegen(rootProject.libs.jooqMetaExtensions)
 }
 
 sourceSets {
@@ -40,14 +38,14 @@ sourceSets {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.23.1"
+        artifact = libs.protobufProtoc.get().toString()
     }
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.55.1"
+            artifact = libs.protobufGenGrpc.get().toString()
         }
         id("grpckt") {
-            artifact = "io.grpc:protoc-gen-grpc-kotlin:1.3.0:jdk8@jar"
+            artifact = libs.protobufGenGrpcKotlin.get().toString()
         }
     }
     generateProtoTasks {

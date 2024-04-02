@@ -4,9 +4,9 @@ plugins {
 
 dependencies {
     api(project(":controller-shared"))
+    api(rootProject.libs.kotlinCoroutines)
     implementation(rootProject.libs.bundles.log4j)
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
-    implementation("com.github.ajalt.clikt:clikt:4.3.0")
+    implementation(rootProject.libs.clikt)
 }
 
 application {

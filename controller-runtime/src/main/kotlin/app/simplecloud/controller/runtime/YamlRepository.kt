@@ -1,15 +1,11 @@
 package app.simplecloud.controller.runtime
 
 import org.spongepowered.configurate.ConfigurationNode
-import org.spongepowered.configurate.kotlin.extensions.get
-import org.spongepowered.configurate.kotlin.objectMapper
 import org.spongepowered.configurate.kotlin.objectMapperFactory
-import org.spongepowered.configurate.objectmapping.ConfigSerializable
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.util.Collections
 import java.util.concurrent.CompletableFuture
 
 abstract class YamlRepository<T>(path: String, private var clazz: Class<T>) : Repository<T>() {

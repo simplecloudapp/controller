@@ -6,7 +6,7 @@ import java.nio.file.Path
 
 class GroupRepository(
     path: Path
-): YamlDirectoryRepository<String, Group>(path, Group::class.java) {
+) : YamlDirectoryRepository<String, Group>(path, Group::class.java) {
     override fun getFileName(identifier: String): String {
         return "$identifier.yml"
     }

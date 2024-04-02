@@ -4,14 +4,21 @@ import app.simplecloud.controller.runtime.ControllerRuntime
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.path
+import java.nio.file.Path
 
-class ControllerStartCommand: CliktCommand() {
+class ControllerStartCommand : CliktCommand() {
 
-  val groupPath: String by option(help = "Path to the group files").default("groups")
-  val databaseConfigPath: String by option(help = "Path to the database config file").default("")
+    private val defaultDatabaseUrl = "jdbc:sqlite:database.db"
 
-  override fun run() {
-    val controllerRuntime = ControllerRuntime(this)
-    controllerRuntime.start()
-  }
+    val groupPath: Path by option(help = "Path to the group files (groups)", envvar = "GROUPS_PATH")
+        .path()
+        .default(Path.of("groups"))
+    val databaseUrl: String by option(help = "Database URL (${defaultDatabaseUrl})", envvar = "DATABASE_URL")
+        .default(defaultDatabaseUrl)
+
+    override fun run() {
+        val controllerRuntime = ControllerRuntime(this)
+        controllerRuntime.start()
+    }
 }
