@@ -72,7 +72,10 @@ class Reconciler(
 
         val unusedNumericalIds = numericalIds.filter { !usedNumericalIds.contains(it) }.toSet()
         numericalIdRepository.removeNumericalIds(groupName, unusedNumericalIds)
-        logger.info("Removed ${unusedNumericalIds.size} unused numerical ids for group $groupName")
+
+        if (unusedNumericalIds.isNotEmpty()) {
+            logger.info("Removed unused numerical ids $unusedNumericalIds of group $groupName")
+        }
     }
 
     private fun wasUpdatedRecently(server: Server): Boolean {
