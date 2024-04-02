@@ -1,17 +1,17 @@
 package app.simplecloud.controller.runtime
 
+import com.github.difflib.text.DiffRowGenerator
 import kotlinx.coroutines.*
 import org.apache.logging.log4j.LogManager
+import org.spongepowered.configurate.BasicConfigurationNode
 import org.spongepowered.configurate.ConfigurationOptions
 import org.spongepowered.configurate.kotlin.objectMapperFactory
+import org.spongepowered.configurate.yaml.NodeStyle
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.io.File
-import java.nio.file.FileSystems
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardWatchEventKinds
-import java.nio.file.WatchEvent
+import java.nio.file.*
 import kotlin.io.path.name
+
 
 abstract class YamlDirectoryRepository<I, T>(
   private val directory: Path,
@@ -83,6 +83,7 @@ abstract class YamlDirectoryRepository<I, T>(
     return loaders.getOrPut(file) {
       YamlConfigurationLoader.builder()
         .path(file.toPath())
+        .nodeStyle(NodeStyle.BLOCK)
         .defaultOptions { options ->
           options.serializers { builder ->
             builder.registerAnnotatedObjects(objectMapperFactory())
