@@ -14,7 +14,7 @@ plugins {
 rootProject.name = "simplecloud-controller"
 
 include(
-    "controller-shared",
-    "controller-api",
-    "controller-runtime"
+        "controller-shared",
+        "controller-api",
+        "controller-runtime"
 )

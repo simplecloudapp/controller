@@ -4,14 +4,9 @@ import app.simplecloud.controller.api.Controller
 import app.simplecloud.controller.api.server.ServerApi
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
-import app.simplecloud.controller.shared.proto.ControllerServerServiceGrpc
-import app.simplecloud.controller.shared.proto.GroupNameRequest
-import app.simplecloud.controller.shared.proto.ServerIdRequest
-import app.simplecloud.controller.shared.proto.ServerType
-import app.simplecloud.controller.shared.proto.ServerTypeRequest
+import app.simplecloud.controller.shared.proto.*
 import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.controller.shared.status.ApiResponse
-import com.google.protobuf.Api
 import java.util.concurrent.CompletableFuture
 
 class ServerApiImpl : ServerApi {
