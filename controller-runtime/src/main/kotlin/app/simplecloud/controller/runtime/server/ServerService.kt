@@ -42,9 +42,10 @@ class ServerService(
                         logger.error("Server was found to be offline, unregistering...")
                         serverRepository.delete(it)
                     }
-                    channel.shutdown()
-                }
+                }.get()
             }
+
+            channel.shutdown()
         }
     }
 
