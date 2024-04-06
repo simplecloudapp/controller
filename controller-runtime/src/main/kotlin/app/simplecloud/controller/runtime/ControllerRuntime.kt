@@ -17,7 +17,7 @@ import org.apache.logging.log4j.LogManager
 import kotlin.concurrent.thread
 
 class ControllerRuntime(
-    controllerStartCommand: ControllerStartCommand
+    private val controllerStartCommand: ControllerStartCommand
 ) {
 
     private val logger = LogManager.getLogger(ControllerRuntime::class.java)
@@ -35,7 +35,7 @@ class ControllerRuntime(
         numericalIdRepository,
         createManagedChannel()
     )
-    private val server = createGrpcServerFromEnv()
+    private val server = createGrpcServer()
 
     fun start() {
         setupDatabase()
@@ -74,17 +74,17 @@ class ControllerRuntime(
         logger.info("Loaded groups: ${loadedGroups.joinToString(",")}")
     }
 
-    private fun createGrpcServerFromEnv(): Server {
-        val port = System.getenv("GRPC_PORT")?.toInt() ?: 5816
-        return ServerBuilder.forPort(port)
+    private fun createGrpcServer(): Server {
+        return ServerBuilder.forPort(controllerStartCommand.grpcPort)
             .addService(GroupService(groupRepository))
             .addService(ServerService(numericalIdRepository, serverRepository, hostRepository, groupRepository))
             .build()
     }
 
     private fun createManagedChannel(): ManagedChannel {
-        val port = System.getenv("GRPC_PORT")?.toInt() ?: 5816
-        return ManagedChannelBuilder.forAddress("localhost", port).usePlaintext().build()
+        return ManagedChannelBuilder.forAddress(controllerStartCommand.grpcHost, controllerStartCommand.grpcPort)
+            .usePlaintext()
+            .build()
     }
 
     @OptIn(InternalCoroutinesApi::class)
