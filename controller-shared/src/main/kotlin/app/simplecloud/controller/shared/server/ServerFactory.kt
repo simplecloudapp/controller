@@ -2,7 +2,7 @@ package app.simplecloud.controller.shared.server
 
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.host.ServerHost
-import app.simplecloud.controller.shared.proto.ServerState
+import build.buf.gen.simplecloud.controller.v1.ServerState
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.properties.Delegates

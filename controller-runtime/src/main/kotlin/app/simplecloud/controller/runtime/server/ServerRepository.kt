@@ -4,8 +4,8 @@ import app.simplecloud.controller.runtime.Repository
 import app.simplecloud.controller.runtime.database.Database
 import app.simplecloud.controller.shared.db.Tables.CLOUD_SERVERS
 import app.simplecloud.controller.shared.db.Tables.CLOUD_SERVER_PROPERTIES
-import app.simplecloud.controller.shared.proto.ServerState
-import app.simplecloud.controller.shared.proto.ServerType
+import build.buf.gen.simplecloud.controller.v1.ServerState
+import build.buf.gen.simplecloud.controller.v1.ServerType
 import app.simplecloud.controller.shared.server.Server
 import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture

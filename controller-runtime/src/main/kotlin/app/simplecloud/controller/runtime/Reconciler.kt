@@ -6,10 +6,10 @@ import app.simplecloud.controller.runtime.server.ServerNumericalIdRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
-import app.simplecloud.controller.shared.proto.ControllerServerServiceGrpc
-import app.simplecloud.controller.shared.proto.GroupNameRequest
-import app.simplecloud.controller.shared.proto.ServerIdRequest
-import app.simplecloud.controller.shared.proto.ServerState
+import build.buf.gen.simplecloud.controller.v1.ControllerServerServiceGrpc
+import build.buf.gen.simplecloud.controller.v1.GroupNameRequest
+import build.buf.gen.simplecloud.controller.v1.ServerIdRequest
+import build.buf.gen.simplecloud.controller.v1.ServerState
 import app.simplecloud.controller.shared.server.Server
 import io.grpc.ManagedChannel
 import org.apache.logging.log4j.LogManager

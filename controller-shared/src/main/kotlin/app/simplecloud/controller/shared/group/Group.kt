@@ -1,7 +1,7 @@
 package app.simplecloud.controller.shared.group
 
-import app.simplecloud.controller.shared.proto.GroupDefinition
-import app.simplecloud.controller.shared.proto.ServerType
+import build.buf.gen.simplecloud.controller.v1.GroupDefinition
+import build.buf.gen.simplecloud.controller.v1.ServerType
 import org.spongepowered.configurate.objectmapping.ConfigSerializable
 
 @ConfigSerializable

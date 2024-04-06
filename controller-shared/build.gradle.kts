@@ -1,7 +1,4 @@
-import com.google.protobuf.gradle.id
-
 plugins {
-    alias(libs.plugins.protobuf)
     alias(libs.plugins.jooqCodegen)
 }
 
@@ -15,16 +12,8 @@ dependencies {
 
 sourceSets {
     main {
-        kotlin {
-            srcDirs(
-                "build/generated/source/proto/main/grpckt",
-                "build/generated/source/proto/main/kotlin",
-            )
-        }
         java {
             srcDirs(
-                "build/generated/source/proto/main/grpc",
-                "build/generated/source/proto/main/java",
                 "build/generated/source/db/main/java",
             )
         }
@@ -32,31 +21,6 @@ sourceSets {
             srcDirs(
                 "src/main/db"
             )
-        }
-    }
-}
-
-protobuf {
-    protoc {
-        artifact = libs.protobufProtoc.get().toString()
-    }
-    plugins {
-        id("grpc") {
-            artifact = libs.protobufGenGrpc.get().toString()
-        }
-        id("grpckt") {
-            artifact = libs.protobufGenGrpcKotlin.get().toString()
-        }
-    }
-    generateProtoTasks {
-        all().forEach {
-            it.plugins {
-                id("grpc")
-                id("grpckt")
-            }
-            it.builtins {
-                id("kotlin")
-            }
         }
     }
 }

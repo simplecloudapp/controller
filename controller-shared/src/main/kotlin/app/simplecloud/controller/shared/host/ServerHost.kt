@@ -1,6 +1,6 @@
 package app.simplecloud.controller.shared.host
 
-import app.simplecloud.controller.shared.proto.ServerHostDefinition
+import build.buf.gen.simplecloud.controller.v1.ServerHostDefinition
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import org.spongepowered.configurate.objectmapping.ConfigSerializable

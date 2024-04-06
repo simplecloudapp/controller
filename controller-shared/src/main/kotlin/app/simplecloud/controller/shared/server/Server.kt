@@ -1,8 +1,8 @@
 package app.simplecloud.controller.shared.server
 
-import app.simplecloud.controller.shared.proto.ServerDefinition
-import app.simplecloud.controller.shared.proto.ServerState
-import app.simplecloud.controller.shared.proto.ServerType
+import build.buf.gen.simplecloud.controller.v1.ServerDefinition
+import build.buf.gen.simplecloud.controller.v1.ServerState
+import build.buf.gen.simplecloud.controller.v1.ServerType
 import java.time.LocalDateTime
 
 data class Server(

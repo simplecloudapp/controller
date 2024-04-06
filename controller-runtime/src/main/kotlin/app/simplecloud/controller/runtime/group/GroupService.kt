@@ -1,7 +1,7 @@
 package app.simplecloud.controller.runtime.group
 
 import app.simplecloud.controller.shared.group.Group
-import app.simplecloud.controller.shared.proto.*
+import build.buf.gen.simplecloud.controller.v1.*
 import app.simplecloud.controller.shared.status.ApiResponse
 import io.grpc.stub.StreamObserver
 

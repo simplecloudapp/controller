@@ -4,10 +4,9 @@ kotlinCoroutines = "1.4.2"
 shadow = "8.1.1"
 log4j = "2.20.0"
 protobuf = "3.25.2"
-protobufPlugin = "0.9.4"
 grpc = "1.61.0"
 grpcKotlin = "1.4.1"
-grpcGenKotlin = "1.3.0:jdk8@jar"
+simpleCloudProtoSpecs = "1.4.1.1.20240406080148.cbc66e7054b0"
 jooq = "3.19.3"
 configurate = "4.1.2"
 sqliteJdbc = "3.44.1.0"
@@ -23,14 +22,13 @@ log4jApi = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j
 log4jSlf4j = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
 
 protobufKotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
-protobufProtoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
-protobufGenGrpc = { module = "io.grpc:protoc-gen-grpc-java", version.ref = "grpc" }
-protobufGenGrpcKotlin = { module = "io.grpc:protoc-gen-grpc-kotlin", version.ref = "grpcGenKotlin" }
 
 grpcStub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 grpcKotlinStub = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpcKotlin" }
 grpcProtobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
 grpcNettyShaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
+
+simpleCloudProtoSpecs = { module = "build.buf.gen:simplecloud_proto-specs_grpc_kotlin", version.ref = "simpleCloudProtoSpecs" }
 
 qooq = { module = "org.jooq:jooq", version.ref = "jooq" }
 qooqMeta = { module = "org.jooq:jooq-meta", version.ref = "jooq" }
@@ -54,7 +52,8 @@ proto = [
     "grpcStub",
     "grpcKotlinStub",
     "grpcProtobuf",
-    "grpcNettyShaded"
+    "grpcNettyShaded",
+    "simpleCloudProtoSpecs"
 ]
 jooq = [
     "qooq",
@@ -68,5 +67,4 @@ configurate = [
 [plugins]
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
-protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
 jooqCodegen = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }

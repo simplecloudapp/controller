@@ -1,7 +1,7 @@
 package app.simplecloud.controller.api.server
 
 import app.simplecloud.controller.shared.group.Group
-import app.simplecloud.controller.shared.proto.ServerType
+import build.buf.gen.simplecloud.controller.v1.ServerType
 import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.controller.shared.status.ApiResponse
 import java.util.concurrent.CompletableFuture

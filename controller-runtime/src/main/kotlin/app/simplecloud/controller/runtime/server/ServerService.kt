@@ -5,7 +5,7 @@ import app.simplecloud.controller.runtime.host.ServerHostException
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.host.ServerHost
-import app.simplecloud.controller.shared.proto.*
+import build.buf.gen.simplecloud.controller.v1.*
 import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.controller.shared.server.ServerFactory
 import app.simplecloud.controller.shared.status.ApiResponse

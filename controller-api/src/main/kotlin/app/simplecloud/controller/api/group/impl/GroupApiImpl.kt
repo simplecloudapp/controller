@@ -4,8 +4,8 @@ import app.simplecloud.controller.api.Controller
 import app.simplecloud.controller.api.group.GroupApi
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
-import app.simplecloud.controller.shared.proto.ControllerGroupServiceGrpc
-import app.simplecloud.controller.shared.proto.GetGroupByNameRequest
+import build.buf.gen.simplecloud.controller.v1.ControllerGroupServiceGrpc
+import build.buf.gen.simplecloud.controller.v1.GetGroupByNameRequest
 import app.simplecloud.controller.shared.status.ApiResponse
 import java.util.concurrent.CompletableFuture
 
