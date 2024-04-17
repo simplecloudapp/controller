@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import org.apache.logging.log4j.LogManager
 import org.spongepowered.configurate.ConfigurationOptions
 import org.spongepowered.configurate.kotlin.objectMapperFactory
+import org.spongepowered.configurate.loader.ParsingException
 import org.spongepowered.configurate.yaml.NodeStyle
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.io.File
@@ -47,19 +48,34 @@ abstract class YamlDirectoryRepository<I, T>(
         Files.list(directory)
             .filter { !it.toFile().isDirectory && it.toString().endsWith(".yml") }
             .forEach {
-                load(it.toFile())
-                fileNames.add(it.name)
+                val successFullyLoaded = load(it.toFile())
+                if (successFullyLoaded) {
+                    fileNames.add(it.name)
+                }
             }
 
         registerWatcher()
         return fileNames
     }
 
-    private fun load(file: File) {
-        val loader = getOrCreateLoader(file)
-        val node = loader.load(ConfigurationOptions.defaults())
-        val entity = node.get(clazz) ?: return
-        entities[file] = entity
+    private fun load(file: File): Boolean {
+        try {
+            val loader = getOrCreateLoader(file)
+            val node = loader.load(ConfigurationOptions.defaults())
+            val entity = node.get(clazz) ?: return false
+            entities[file] = entity
+        } catch (ex: ParsingException) {
+            val existedBefore = entities.containsKey(file)
+            if (existedBefore) {
+                logger.error("Could not load file ${file.name}. Switching back to an older version.")
+                return false
+            }
+
+            logger.error("Could not load file ${file.name}. Make sure it's correctly formatted!")
+            return false
+        }
+
+        return true
     }
 
     private fun delete(file: File): Boolean {

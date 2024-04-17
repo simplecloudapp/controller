@@ -71,6 +71,10 @@ class ControllerRuntime(
     private fun loadGroups() {
         logger.info("Loading groups...")
         val loadedGroups = groupRepository.loadAll()
+        if (loadedGroups.isEmpty()) {
+            logger.warn("No groups found.")
+        }
+
         logger.info("Loaded groups: ${loadedGroups.joinToString(",")}")
     }
 
