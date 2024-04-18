@@ -3,6 +3,7 @@ package app.simplecloud.controller.runtime.server
 import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostException
 import app.simplecloud.controller.runtime.host.ServerHostRepository
+import app.simplecloud.controller.runtime.secret.ForwardingSecretHandler
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.host.ServerHost
 import build.buf.gen.simplecloud.controller.v1.*
@@ -18,6 +19,7 @@ class ServerService(
     private val serverRepository: ServerRepository,
     private val hostRepository: ServerHostRepository,
     private val groupRepository: GroupRepository,
+    private val secretHandler: ForwardingSecretHandler
 ) : ControllerServerServiceGrpc.ControllerServerServiceImplBase() {
 
     private val logger = LogManager.getLogger(ServerService::class.java)
@@ -113,6 +115,7 @@ class ServerService(
         val server = ServerFactory.builder()
             .setGroup(group)
             .setNumericalId(numericalId.toLong())
+            .setForwardingSecret(secretHandler.getSecret())
             .build()
         serverRepository.save(server)
         stub.startServer(
@@ -155,6 +158,36 @@ class ServerService(
             responseObserver.onCompleted()
             channel.shutdown()
         }
+    }
+
+    override fun updateServerProperty(
+        request: ServerUpdatePropertyRequest,
+        responseObserver: StreamObserver<StatusResponse>
+    ) {
+        val server = serverRepository.findServerById(request.id)
+        if(server == null) {
+            responseObserver.onError(NullPointerException("Server with id ${request.id} does not exist."))
+            return
+        }
+        server.properties[request.key] = request.value
+        serverRepository.save(server)
+        responseObserver.onNext(ApiResponse("success").toDefinition())
+        responseObserver.onCompleted()
+    }
+
+    override fun updateServerState(
+        request: ServerUpdateStateRequest,
+        responseObserver: StreamObserver<StatusResponse>
+    ) {
+        val server = serverRepository.findServerById(request.id)
+        if(server == null) {
+            responseObserver.onError(NullPointerException("Server with id ${request.id} does not exist."))
+            return
+        }
+        server.state = request.state
+        serverRepository.save(server)
+        responseObserver.onNext(ApiResponse("success").toDefinition())
+        responseObserver.onCompleted()
     }
 
 }

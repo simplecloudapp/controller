@@ -8,13 +8,12 @@ import org.spongepowered.configurate.objectmapping.ConfigSerializable
 data class Group(
     val name: String = "",
     val type: ServerType = ServerType.OTHER,
-    val serverUrl: String = "",
     val minMemory: Long = 0,
     val maxMemory: Long = 0,
     val startPort: Long = 0,
-    @Transient val onlineServers: Long? = 0,
     val minOnlineCount: Long = 0,
     val maxOnlineCount: Long = 0,
+    val maxPlayers: Long = 0,
     val properties: Map<String, String> = mapOf()
 ) {
 
@@ -22,13 +21,12 @@ data class Group(
         return GroupDefinition.newBuilder()
             .setName(name)
             .setType(type)
-            .setServerUrl(serverUrl)
             .setMinimumMemory(minMemory)
             .setMaximumMemory(maxMemory)
             .setStartPort(startPort)
-            .setOnlineServers(onlineServers ?: 0)
             .setMinimumOnlineCount(minOnlineCount)
             .setMaximumOnlineCount(maxOnlineCount)
+            .setMaxPlayers(maxPlayers)
             .putAllProperties(properties)
             .build()
     }
@@ -39,13 +37,12 @@ data class Group(
             return Group(
                 groupDefinition.name,
                 groupDefinition.type,
-                groupDefinition.serverUrl,
                 groupDefinition.minimumMemory,
                 groupDefinition.maximumMemory,
                 groupDefinition.startPort,
-                groupDefinition.onlineServers,
                 groupDefinition.minimumOnlineCount,
                 groupDefinition.maximumOnlineCount,
+                groupDefinition.maxPlayers,
                 groupDefinition.propertiesMap
             )
         }

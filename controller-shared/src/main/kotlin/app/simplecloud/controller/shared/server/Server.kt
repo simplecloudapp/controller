@@ -11,14 +11,14 @@ data class Server(
     val group: String,
     val host: String?,
     val numericalId: Int,
-    val templateId: String,
     val ip: String,
     val port: Long,
     val minMemory: Long,
     val maxMemory: Long,
-    val playerCount: Long,
+    val maxPlayers: Long,
+    var playerCount: Long,
     val properties: MutableMap<String, String>,
-    val state: ServerState,
+    var state: ServerState,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 ) {
@@ -34,8 +34,8 @@ data class Server(
             .setMinimumMemory(minMemory)
             .setMaximumMemory(maxMemory)
             .setPlayerCount(playerCount)
+            .setMaxPlayers(maxPlayers)
             .putAllProperties(properties)
-            .setTemplateId(templateId)
             .setNumericalId(numericalId)
             .setCreatedAt(createdAt.toString())
             .setUpdatedAt(updatedAt.toString())
@@ -51,11 +51,11 @@ data class Server(
                 serverDefinition.groupName,
                 serverDefinition.hostId,
                 serverDefinition.numericalId,
-                serverDefinition.templateId,
                 serverDefinition.ip,
                 serverDefinition.port,
                 serverDefinition.minimumMemory,
                 serverDefinition.maximumMemory,
+                serverDefinition.maxPlayers,
                 serverDefinition.playerCount,
                 serverDefinition.propertiesMap,
                 serverDefinition.state,

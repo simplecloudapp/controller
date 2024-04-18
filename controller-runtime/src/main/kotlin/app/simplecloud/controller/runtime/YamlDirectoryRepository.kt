@@ -106,7 +106,6 @@ abstract class YamlDirectoryRepository<I, T>(
         }
     }
 
-    @OptIn(InternalCoroutinesApi::class)
     private fun registerWatcher(): Job {
         directory.register(
             watchService,
@@ -116,7 +115,7 @@ abstract class YamlDirectoryRepository<I, T>(
         )
 
         return CoroutineScope(Dispatchers.Default).launch {
-            while (NonCancellable.isActive) {
+            while (isActive) {
                 val key = watchService.take()
                 for (event in key.pollEvents()) {
                     val path = event.context() as? Path ?: continue

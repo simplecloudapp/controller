@@ -21,6 +21,10 @@ class ControllerStartCommand : CliktCommand() {
     val grpcHost: String by option(help = "Grpc host (default: localhost)", envvar = "GRPC_HOST").default("localhost")
     val grpcPort: Int by option(help = "Grpc port (default: 5816)", envvar = "GRPC_PORT").int().default(5816)
 
+    val velocitySecretPath: Path by option(help = "Path to the velocity secret (default: forwarding.secret)", envvar = "VELOCITY_SECRET_PATH")
+        .path()
+        .default(Path.of("forwarding.secret"))
+
     override fun run() {
         val controllerRuntime = ControllerRuntime(this)
         controllerRuntime.start()

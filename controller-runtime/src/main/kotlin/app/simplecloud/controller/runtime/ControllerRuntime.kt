@@ -8,6 +8,7 @@ import app.simplecloud.controller.runtime.launcher.ControllerStartCommand
 import app.simplecloud.controller.runtime.server.ServerNumericalIdRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.runtime.server.ServerService
+import app.simplecloud.controller.runtime.secret.ForwardingSecretHandler
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Server
@@ -21,7 +22,7 @@ class ControllerRuntime(
 ) {
 
     private val logger = LogManager.getLogger(ControllerRuntime::class.java)
-
+    private val forwardingSecretHandler = ForwardingSecretHandler(controllerStartCommand.velocitySecretPath)
     private val database = DatabaseFactory.createDatabase(controllerStartCommand.databaseUrl)
 
     private val groupRepository = GroupRepository(controllerStartCommand.groupPath)
@@ -81,7 +82,7 @@ class ControllerRuntime(
     private fun createGrpcServer(): Server {
         return ServerBuilder.forPort(controllerStartCommand.grpcPort)
             .addService(GroupService(groupRepository))
-            .addService(ServerService(numericalIdRepository, serverRepository, hostRepository, groupRepository))
+            .addService(ServerService(numericalIdRepository, serverRepository, hostRepository, groupRepository, forwardingSecretHandler))
             .build()
     }
 
@@ -91,10 +92,9 @@ class ControllerRuntime(
             .build()
     }
 
-    @OptIn(InternalCoroutinesApi::class)
     private fun startReconcilerJob(): Job {
         return CoroutineScope(Dispatchers.Default).launch {
-            while (NonCancellable.isActive) {
+            while (isActive) {
                 reconciler.reconcile()
                 delay(2000L)
             }

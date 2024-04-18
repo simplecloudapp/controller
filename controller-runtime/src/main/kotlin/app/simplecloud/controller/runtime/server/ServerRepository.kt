@@ -45,11 +45,11 @@ class ServerRepository(
                     it.groupName,
                     it.hostId,
                     it.numericalId,
-                    it.templateId,
                     it.ip,
                     it.port.toLong(),
                     it.minimumMemory.toLong(),
                     it.maximumMemory.toLong(),
+                    it.maxPlayers.toLong(),
                     it.playerCount.toLong(),
                     propertiesQuery.map { item ->
                         item.key to item.value
@@ -103,11 +103,11 @@ class ServerRepository(
             CLOUD_SERVERS.GROUP_NAME,
             CLOUD_SERVERS.HOST_ID,
             CLOUD_SERVERS.NUMERICAL_ID,
-            CLOUD_SERVERS.TEMPLATE_ID,
             CLOUD_SERVERS.IP,
             CLOUD_SERVERS.PORT,
             CLOUD_SERVERS.MINIMUM_MEMORY,
             CLOUD_SERVERS.MAXIMUM_MEMORY,
+            CLOUD_SERVERS.MAX_PLAYERS,
             CLOUD_SERVERS.PLAYER_COUNT,
             CLOUD_SERVERS.STATE,
             CLOUD_SERVERS.CREATED_AT,
@@ -119,11 +119,11 @@ class ServerRepository(
                 element.group,
                 element.host,
                 element.numericalId,
-                element.templateId,
                 element.ip,
                 element.port.toInt(),
                 element.minMemory.toInt(),
                 element.maxMemory.toInt(),
+                element.maxPlayers.toInt(),
                 element.playerCount.toInt(),
                 element.state.toString(),
                 currentTimestamp,
@@ -135,11 +135,11 @@ class ServerRepository(
             .set(CLOUD_SERVERS.GROUP_NAME, element.group)
             .set(CLOUD_SERVERS.HOST_ID, element.host)
             .set(CLOUD_SERVERS.NUMERICAL_ID, element.numericalId)
-            .set(CLOUD_SERVERS.TEMPLATE_ID, element.templateId)
             .set(CLOUD_SERVERS.IP, element.ip)
             .set(CLOUD_SERVERS.PORT, element.port.toInt())
             .set(CLOUD_SERVERS.MINIMUM_MEMORY, element.minMemory.toInt())
             .set(CLOUD_SERVERS.MAXIMUM_MEMORY, element.maxMemory.toInt())
+            .set(CLOUD_SERVERS.MAX_PLAYERS, element.maxPlayers.toInt())
             .set(CLOUD_SERVERS.PLAYER_COUNT, element.playerCount.toInt())
             .set(CLOUD_SERVERS.STATE, element.state.toString())
             .set(CLOUD_SERVERS.UPDATED_AT, currentTimestamp)

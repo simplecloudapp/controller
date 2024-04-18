@@ -18,4 +18,8 @@ class GroupRepository(
     override fun save(entity: Group) {
         save(getFileName(entity.name), entity)
     }
+
+    fun getAll(): List<Group> {
+        return entities.values.toList()
+    }
 }

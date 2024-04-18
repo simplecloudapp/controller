@@ -27,6 +27,28 @@ class GroupService(
         responseObserver.onCompleted()
     }
 
+    override fun getAllGroups(request: GetAllGroupsRequest, responseObserver: StreamObserver<GetAllGroupsResponse>) {
+        val response = GetAllGroupsResponse.newBuilder().addAllGroups(groupRepository.getAll().map { it.toDefinition() }).build()
+        responseObserver.onNext(response)
+        responseObserver.onCompleted()
+    }
+
+    override fun getGroupsByType(
+        request: GetGroupsByTypeRequest,
+        responseObserver: StreamObserver<GetGroupsByTypeResponse>
+    ) {
+        val type = request.type
+        val response = GetGroupsByTypeResponse.newBuilder().addAllGroups(groupRepository.getAll().filter { it.type == type }.map { it.toDefinition() }).build()
+        responseObserver.onNext(response)
+        responseObserver.onCompleted()
+    }
+
+    override fun updateGroup(request: GroupDefinition, responseObserver: StreamObserver<StatusResponse>) {
+        groupRepository.save(Group.fromDefinition(request))
+        responseObserver.onNext(ApiResponse("success").toDefinition())
+        responseObserver.onCompleted()
+    }
+
     override fun createGroup(request: GroupDefinition, responseObserver: StreamObserver<StatusResponse>) {
         val group = Group.fromDefinition(request)
         try {

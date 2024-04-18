@@ -42,6 +42,11 @@ class ServerFactory {
         return this
     }
 
+    private var forwardingSecret: String? = null
+    fun setForwardingSecret(secret: String): ServerFactory {
+        this.forwardingSecret = secret
+        return this
+    }
     fun build(): Server {
         return Server(
             uniqueId = UUID.randomUUID().toString().replace("-", ""),
@@ -54,11 +59,11 @@ class ServerFactory {
             ip = host?.host ?: "unknown",
             state = ServerState.PREPARING,
             numericalId = numericalId.toInt(),
+            maxPlayers = group.maxPlayers,
             playerCount = 0,
-            templateId = "",
             properties = mutableMapOf(
-                "serverUrl" to group.serverUrl,
-                *group.properties.entries.map { it.key to it.value }.toTypedArray()
+                *group.properties.entries.map { it.key to it.value }.toTypedArray(),
+                "forwarding-secret" to (forwardingSecret ?: ""),
             ),
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
