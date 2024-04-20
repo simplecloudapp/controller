@@ -40,7 +40,7 @@ abstract class YamlDirectoryRepository<I, T>(
 
     fun loadAll(): List<String> {
         if (!directory.toFile().exists()) {
-            directory.toFile().mkdir()
+            directory.toFile().mkdirs()
         }
 
         val fileNames = mutableListOf<String>()

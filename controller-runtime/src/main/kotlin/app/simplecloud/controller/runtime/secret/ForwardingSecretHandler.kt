@@ -12,9 +12,13 @@ class ForwardingSecretHandler(
     private val secret: String
     init {
         val secretFile = path.toFile()
-        if(!secretFile.exists()) {
-            Files.createDirectories(secretFile.parentFile.toPath())
-            Files.createFile(secretFile.toPath())
+        if(!Files.exists(path)) {
+            val parent = path.parent
+            if (parent != null) {
+                Files.createDirectories(parent)
+            }
+
+            Files.createFile(path)
             val writer = FileWriter(secretFile)
             writer.write(UUID.randomUUID().toString())
             writer.close()
