@@ -1,2 +1,0 @@
-driver: 'jdbc:sqlite'
-url: '/database.db'
