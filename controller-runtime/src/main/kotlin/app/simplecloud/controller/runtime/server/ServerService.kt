@@ -34,7 +34,7 @@ class ServerService(
         Context.current().fork().run {
             val channel = serverHost.createChannel()
             val stub = ServerHostServiceGrpc.newFutureStub(channel)
-            serverRepository.filter { it.host == serverHost.id }.forEach {
+            serverRepository.findServersByHostId(serverHost.id).forEach {
                 logger.info("Reattaching Server ${it.uniqueId} of group ${it.group}...")
                 stub.reattachServer(it.toDefinition()).toCompletable().thenApply { response ->
                     val status = ApiResponse.fromDefinition(response)

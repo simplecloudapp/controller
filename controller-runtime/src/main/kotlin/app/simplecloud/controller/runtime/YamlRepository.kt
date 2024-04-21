@@ -13,6 +13,7 @@ abstract class YamlRepository<T>(path: String, private var clazz: Class<T>) : Re
     private lateinit var node: ConfigurationNode
     private lateinit var loader: YamlConfigurationLoader
     private var destination: File = File(path.substring(1, path.length))
+    private val list = mutableListOf<T>()
 
     init {
         if (!destination.exists()) {
@@ -35,7 +36,7 @@ abstract class YamlRepository<T>(path: String, private var clazz: Class<T>) : Re
             }.build()
         this.loader = loader
         node = loader.load()
-        addAll(node.getList(clazz) ?: ArrayList())
+        list.addAll(node.getList(clazz) ?: ArrayList())
     }
 
     override fun delete(element: T): CompletableFuture<Boolean> {
@@ -43,7 +44,7 @@ abstract class YamlRepository<T>(path: String, private var clazz: Class<T>) : Re
         if (index == -1) {
             return CompletableFuture.completedFuture(false)
         }
-        removeAt(index)
+        list.removeAt(index)
         node.set(clazz, this)
         return CompletableFuture.completedFuture(true)
     }
@@ -51,12 +52,12 @@ abstract class YamlRepository<T>(path: String, private var clazz: Class<T>) : Re
     override fun save(element: T) {
         val index = findIndex(element)
         if (index != -1) {
-            removeAt(index)
-            add(index, element)
+            list.removeAt(index)
+            list.add(index, element)
         } else {
-            add(element)
+            list.add(element)
         }
-        node.setList(clazz, this)
+        node.setList(clazz, list)
         loader.save(node)
     }
 

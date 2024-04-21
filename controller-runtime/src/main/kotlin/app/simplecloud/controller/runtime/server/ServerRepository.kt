@@ -4,9 +4,11 @@ import app.simplecloud.controller.runtime.Repository
 import app.simplecloud.controller.runtime.database.Database
 import app.simplecloud.controller.shared.db.Tables.CLOUD_SERVERS
 import app.simplecloud.controller.shared.db.Tables.CLOUD_SERVER_PROPERTIES
+import app.simplecloud.controller.shared.db.tables.records.CloudServersRecord
 import build.buf.gen.simplecloud.controller.v1.ServerState
 import build.buf.gen.simplecloud.controller.v1.ServerType
 import app.simplecloud.controller.shared.server.Server
+import org.jooq.Result
 import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
 
@@ -15,30 +17,36 @@ class ServerRepository(
     private val numericalIdRepository: ServerNumericalIdRepository
 ) : Repository<Server>() {
 
+
     fun findServerById(id: String): Server? {
-        return firstOrNull { it.uniqueId == id }
+        val query = database.context.select().from(CLOUD_SERVERS).where(CLOUD_SERVERS.UNIQUE_ID.eq(id)).fetchInto(
+            CLOUD_SERVERS)
+        return toList(query).firstOrNull()
     }
 
     fun findServersByHostId(id: String): List<Server> {
-        return filter { it.host == id }
+        val query = database.context.select().from(CLOUD_SERVERS).where(CLOUD_SERVERS.HOST_ID.eq(id)).fetchInto(
+            CLOUD_SERVERS)
+        return toList(query)
     }
 
     fun findServersByGroup(group: String): List<Server> {
-        return filter { server -> server.group == group }
+        val query = database.context.select().from(CLOUD_SERVERS).where(CLOUD_SERVERS.GROUP_NAME.eq(group)).fetchInto(
+            CLOUD_SERVERS)
+        return toList(query)
     }
 
     fun findServersByType(type: ServerType): List<Server> {
-        return filter { server -> server.type == type }
+        val query = database.context.select().from(CLOUD_SERVERS).where(CLOUD_SERVERS.TYPE.eq(type.toString())).fetchInto(CLOUD_SERVERS)
+        return toList(query)
     }
 
-    override fun load() {
-        clear()
-        val query = database.context.select().from(CLOUD_SERVERS).fetchInto(CLOUD_SERVERS)
+    private fun toList(query: Result<CloudServersRecord>): List<Server> {
+        val result = mutableListOf<Server>()
         query.map {
             val propertiesQuery =
-                database.context.select().from(CLOUD_SERVER_PROPERTIES).fetchInto(CLOUD_SERVER_PROPERTIES)
-            numericalIdRepository.saveNumericalId(it.groupName, it.numericalId)
-            add(
+                database.context.select().from(CLOUD_SERVER_PROPERTIES).where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(it.uniqueId)).fetchInto(CLOUD_SERVER_PROPERTIES)
+            result.add(
                 Server(
                     it.uniqueId,
                     ServerType.valueOf(it.type),
@@ -60,13 +68,13 @@ class ServerRepository(
                 )
             )
         }
+        return result
     }
 
     override fun delete(element: Server): CompletableFuture<Boolean> {
-        val server = firstOrNull { it.uniqueId == element.uniqueId } ?: return CompletableFuture.completedFuture(false)
         val canDelete =
             database.context.deleteFrom(CLOUD_SERVER_PROPERTIES)
-                .where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(server.uniqueId))
+                .where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(element.uniqueId))
                 .executeAsync().toCompletableFuture().thenApply {
                     return@thenApply true
                 }.exceptionally {
@@ -74,11 +82,11 @@ class ServerRepository(
                     return@exceptionally false
                 }.get()
         if (!canDelete) return CompletableFuture.completedFuture(false)
-        numericalIdRepository.removeNumericalId(server.group, server.numericalId)
-        return database.context.deleteFrom(CLOUD_SERVERS).where(CLOUD_SERVERS.UNIQUE_ID.eq(server.uniqueId))
+        numericalIdRepository.removeNumericalId(element.group, element.numericalId)
+        return database.context.deleteFrom(CLOUD_SERVERS).where(CLOUD_SERVERS.UNIQUE_ID.eq(element.uniqueId))
             .executeAsync()
             .toCompletableFuture().thenApply {
-                return@thenApply it > 0 && remove(server)
+                return@thenApply it > 0
             }.exceptionally {
                 it.printStackTrace()
                 return@exceptionally false
@@ -87,11 +95,6 @@ class ServerRepository(
 
     @Synchronized
     override fun save(element: Server) {
-        val server = firstOrNull { it.uniqueId == element.uniqueId }
-        if (server != null) {
-            remove(server)
-        }
-        add(element)
         numericalIdRepository.saveNumericalId(element.group, element.numericalId)
 
         val currentTimestamp = LocalDateTime.now()
@@ -162,6 +165,14 @@ class ServerRepository(
                 .set(CLOUD_SERVER_PROPERTIES.KEY, it.key)
                 .set(CLOUD_SERVER_PROPERTIES.VALUE, it.value)
                 .executeAsync()
+        }
+    }
+
+    override fun load() {
+        val query = database.context.select().from(CLOUD_SERVERS).fetchInto(CLOUD_SERVERS)
+        val list = toList(query)
+        list.forEach {
+            numericalIdRepository.saveNumericalId(it.group, it.numericalId)
         }
     }
 
