@@ -24,6 +24,18 @@ class ServerRepository(
         return toList(query).firstOrNull()
     }
 
+    fun findServerByNumerical(group: String, id: Int): Server? {
+        val query = database.context.select().from(CLOUD_SERVERS).where(CLOUD_SERVERS.GROUP_NAME.eq(group)
+            .and(CLOUD_SERVERS.NUMERICAL_ID.eq(id)))
+            .fetchInto(CLOUD_SERVERS)
+        return toList(query).firstOrNull()
+    }
+
+    fun getAll(): List<Server> {
+        val query = database.context.select().from(CLOUD_SERVERS).fetchInto(CLOUD_SERVERS)
+        return toList(query)
+    }
+
     fun findServersByHostId(id: String): List<Server> {
         val query = database.context.select().from(CLOUD_SERVERS).where(CLOUD_SERVERS.HOST_ID.eq(id)).fetchInto(
             CLOUD_SERVERS)

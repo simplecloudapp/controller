@@ -51,6 +51,54 @@ class ServerService(
         }
     }
 
+    override fun getAllServers(
+        request: GetAllServersRequest,
+        responseObserver: StreamObserver<GetAllServersResponse>
+    ) {
+        val servers = serverRepository.getAll().map { it.toDefinition() }
+        responseObserver.onNext(GetAllServersResponse.newBuilder().addAllServers(servers).build())
+    }
+
+    override fun getServerByNumerical(
+        request: GetServerByNumericalRequest,
+        responseObserver: StreamObserver<ServerDefinition>
+    ) {
+        val server = serverRepository.findServerByNumerical(request.group, request.numericalId.toInt())?.toDefinition()
+        if(server == null) {
+            responseObserver.onError(IllegalArgumentException("No server was found matching this group and numerical id."))
+            return
+        }
+        responseObserver.onNext(server)
+        responseObserver.onCompleted()
+    }
+
+    override fun stopServerByNumerical(
+        request: StopServerByNumericalRequest,
+        responseObserver: StreamObserver<StatusResponse>
+    ) {
+
+        val server = serverRepository.findServerByNumerical(request.group, request.numericalId.toInt())?.toDefinition()
+        if (server == null) {
+            responseObserver.onError(IllegalArgumentException("No server was found matching this group and numerical id."))
+            return
+        }
+        val host = hostRepository.findServerHostById(server.hostId)
+        if (host == null) {
+            responseObserver.onError(ServerHostException("No server host was found matching this server."))
+            return
+        }
+        val channel = host.createChannel()
+        val stub = ServerHostServiceGrpc.newFutureStub(channel)
+        stub.stopServer(server).toCompletable().thenApply {
+            if (it.status == "success") {
+                serverRepository.delete(Server.fromDefinition(server))
+            }
+            responseObserver.onNext(it)
+            responseObserver.onCompleted()
+            channel.shutdown()
+        }
+    }
+
     override fun updateServer(request: ServerUpdateRequest, responseObserver: StreamObserver<StatusResponse>) {
         val deleted = request.deleted
         val server = Server.fromDefinition(request.server)
