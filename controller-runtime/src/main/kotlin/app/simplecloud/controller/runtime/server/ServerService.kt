@@ -3,7 +3,6 @@ package app.simplecloud.controller.runtime.server
 import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostException
 import app.simplecloud.controller.runtime.host.ServerHostRepository
-import app.simplecloud.controller.runtime.secret.ForwardingSecretHandler
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.host.ServerHost
 import build.buf.gen.simplecloud.controller.v1.*
@@ -19,7 +18,7 @@ class ServerService(
     private val serverRepository: ServerRepository,
     private val hostRepository: ServerHostRepository,
     private val groupRepository: GroupRepository,
-    private val secretHandler: ForwardingSecretHandler
+    private val forwardingSecret: String
 ) : ControllerServerServiceGrpc.ControllerServerServiceImplBase() {
 
     private val logger = LogManager.getLogger(ServerService::class.java)
@@ -163,7 +162,7 @@ class ServerService(
         val server = ServerFactory.builder()
             .setGroup(group)
             .setNumericalId(numericalId.toLong())
-            .setForwardingSecret(secretHandler.getSecret())
+            .setForwardingSecret(forwardingSecret)
             .build()
         serverRepository.save(server)
         stub.startServer(

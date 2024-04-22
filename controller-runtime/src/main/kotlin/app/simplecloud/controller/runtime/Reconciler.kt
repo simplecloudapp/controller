@@ -4,6 +4,7 @@ import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.runtime.server.ServerNumericalIdRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
+import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import build.buf.gen.simplecloud.controller.v1.ControllerServerServiceGrpc
@@ -21,11 +22,13 @@ class Reconciler(
     private val serverHostRepository: ServerHostRepository,
     private val numericalIdRepository: ServerNumericalIdRepository,
     managedChannel: ManagedChannel,
+    authCallCredentials: AuthCallCredentials,
 ) {
 
     private val INACTIVE_SERVER_TIME = 5L
 
     private val serverStub = ControllerServerServiceGrpc.newFutureStub(managedChannel)
+        .withCallCredentials(authCallCredentials)
     private val logger = LogManager.getLogger(Reconciler::class.java)
 
     fun reconcile() {
