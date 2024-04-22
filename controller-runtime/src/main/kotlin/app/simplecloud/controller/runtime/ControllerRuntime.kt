@@ -10,7 +10,10 @@ import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.runtime.server.ServerService
 import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.auth.AuthSecretInterceptor
-import io.grpc.*
+import io.grpc.ManagedChannel
+import io.grpc.ManagedChannelBuilder
+import io.grpc.Server
+import io.grpc.ServerBuilder
 import kotlinx.coroutines.*
 import org.apache.logging.log4j.LogManager
 import kotlin.concurrent.thread
@@ -81,7 +84,16 @@ class ControllerRuntime(
     private fun createGrpcServer(): Server {
         return ServerBuilder.forPort(controllerStartCommand.grpcPort)
             .addService(GroupService(groupRepository))
-            .addService(ServerService(numericalIdRepository, serverRepository, hostRepository, groupRepository, controllerStartCommand.forwardingSecret))
+            .addService(
+                ServerService(
+                    numericalIdRepository,
+                    serverRepository,
+                    hostRepository,
+                    groupRepository,
+                    controllerStartCommand.forwardingSecret,
+                    authCallCredentials
+                )
+            )
             .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret))
             .build()
     }

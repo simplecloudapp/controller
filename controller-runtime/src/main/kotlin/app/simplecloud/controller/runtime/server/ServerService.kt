@@ -3,12 +3,13 @@ package app.simplecloud.controller.runtime.server
 import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostException
 import app.simplecloud.controller.runtime.host.ServerHostRepository
+import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.host.ServerHost
-import build.buf.gen.simplecloud.controller.v1.*
 import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.controller.shared.server.ServerFactory
 import app.simplecloud.controller.shared.status.ApiResponse
+import build.buf.gen.simplecloud.controller.v1.*
 import io.grpc.Context
 import io.grpc.stub.StreamObserver
 import org.apache.logging.log4j.LogManager
@@ -18,7 +19,8 @@ class ServerService(
     private val serverRepository: ServerRepository,
     private val hostRepository: ServerHostRepository,
     private val groupRepository: GroupRepository,
-    private val forwardingSecret: String
+    private val forwardingSecret: String,
+    private val authCallCredentials: AuthCallCredentials
 ) : ControllerServerServiceGrpc.ControllerServerServiceImplBase() {
 
     private val logger = LogManager.getLogger(ServerService::class.java)
@@ -33,6 +35,7 @@ class ServerService(
         Context.current().fork().run {
             val channel = serverHost.createChannel()
             val stub = ServerHostServiceGrpc.newFutureStub(channel)
+                .withCallCredentials(authCallCredentials)
             serverRepository.findServersByHostId(serverHost.id).forEach {
                 logger.info("Reattaching Server ${it.uniqueId} of group ${it.group}...")
                 stub.reattachServer(it.toDefinition()).toCompletable().thenApply { response ->
@@ -63,7 +66,7 @@ class ServerService(
         responseObserver: StreamObserver<ServerDefinition>
     ) {
         val server = serverRepository.findServerByNumerical(request.group, request.numericalId.toInt())?.toDefinition()
-        if(server == null) {
+        if (server == null) {
             responseObserver.onError(IllegalArgumentException("No server was found matching this group and numerical id."))
             return
         }
@@ -88,6 +91,7 @@ class ServerService(
         }
         val channel = host.createChannel()
         val stub = ServerHostServiceGrpc.newFutureStub(channel)
+            .withCallCredentials(authCallCredentials)
         stub.stopServer(server).toCompletable().thenApply {
             if (it.status == "success") {
                 serverRepository.delete(Server.fromDefinition(server))
@@ -152,6 +156,7 @@ class ServerService(
         }
         val channel = host.createChannel()
         val stub = ServerHostServiceGrpc.newFutureStub(channel)
+            .withCallCredentials(authCallCredentials)
         val group = groupRepository.find(request.name)
         if (group == null) {
             responseObserver.onError(IllegalArgumentException("No group was found matching the group name."))
@@ -197,6 +202,7 @@ class ServerService(
         }
         val channel = host.createChannel()
         val stub = ServerHostServiceGrpc.newFutureStub(channel)
+            .withCallCredentials(authCallCredentials)
         stub.stopServer(server).toCompletable().thenApply {
             if (it.status == "success") {
                 serverRepository.delete(Server.fromDefinition(server))
@@ -212,7 +218,7 @@ class ServerService(
         responseObserver: StreamObserver<StatusResponse>
     ) {
         val server = serverRepository.findServerById(request.id)
-        if(server == null) {
+        if (server == null) {
             responseObserver.onError(NullPointerException("Server with id ${request.id} does not exist."))
             return
         }
@@ -227,7 +233,7 @@ class ServerService(
         responseObserver: StreamObserver<StatusResponse>
     ) {
         val server = serverRepository.findServerById(request.id)
-        if(server == null) {
+        if (server == null) {
             responseObserver.onError(NullPointerException("Server with id ${request.id} does not exist."))
             return
         }
