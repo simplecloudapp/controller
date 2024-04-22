@@ -28,7 +28,7 @@ class GroupReconciler(
     private val group: Group,
 ) {
 
-    private val logger = LogManager.getLogger(Reconciler::class.java)
+    private val logger = LogManager.getLogger(GroupReconciler::class.java)
     private val servers = this.serverRepository.findServersByGroup(this.group.name)
 
     private val availableServerCount = calculateAvailableServerCount()
