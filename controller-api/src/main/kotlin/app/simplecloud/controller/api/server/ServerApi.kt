@@ -42,4 +42,5 @@ interface ServerApi {
      * @return a [CompletableFuture] with a [ApiResponse].
      */
     fun stopServer(id: String): CompletableFuture<ApiResponse>
+
 }

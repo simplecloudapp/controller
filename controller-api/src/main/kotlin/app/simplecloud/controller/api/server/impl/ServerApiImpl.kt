@@ -2,6 +2,7 @@ package app.simplecloud.controller.api.server.impl
 
 import app.simplecloud.controller.api.Controller
 import app.simplecloud.controller.api.server.ServerApi
+import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import build.buf.gen.simplecloud.controller.v1.*
@@ -9,12 +10,15 @@ import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.controller.shared.status.ApiResponse
 import java.util.concurrent.CompletableFuture
 
-class ServerApiImpl : ServerApi {
+class ServerApiImpl(
+    authCallCredentials: AuthCallCredentials
+) : ServerApi {
 
     private val messageChannel = Controller.createManagedChannelFromEnv()
 
     private val serverServiceStub: ControllerServerServiceGrpc.ControllerServerServiceFutureStub =
         ControllerServerServiceGrpc.newFutureStub(messageChannel)
+            .withCallCredentials(authCallCredentials)
 
     override fun getServerById(id: String): CompletableFuture<Server> {
         return serverServiceStub.getServerById(

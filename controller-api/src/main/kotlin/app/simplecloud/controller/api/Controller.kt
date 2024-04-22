@@ -4,6 +4,7 @@ import app.simplecloud.controller.api.group.GroupApi
 import app.simplecloud.controller.api.group.impl.GroupApiImpl
 import app.simplecloud.controller.api.server.ServerApi
 import app.simplecloud.controller.api.server.impl.ServerApiImpl
+import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 
@@ -18,8 +19,14 @@ class Controller {
             private set
 
         fun connect() {
-            initGroupApi(GroupApiImpl())
-            initServerApi(ServerApiImpl())
+            val authSecret = System.getenv("GRPC_SECRET")
+            connect(authSecret)
+        }
+
+        fun connect(authSecret: String) {
+            val authCallCredentials = AuthCallCredentials(authSecret)
+            initGroupApi(GroupApiImpl(authCallCredentials))
+            initServerApi(ServerApiImpl(authCallCredentials))
         }
 
         private fun initGroupApi(groupApi: GroupApi) {
