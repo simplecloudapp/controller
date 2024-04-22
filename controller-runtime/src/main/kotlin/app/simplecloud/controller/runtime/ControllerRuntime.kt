@@ -5,11 +5,11 @@ import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.group.GroupService
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.runtime.launcher.ControllerStartCommand
-import app.simplecloud.controller.runtime.reconciler.Reconciler
-import app.simplecloud.controller.runtime.secret.ForwardingSecretHandler
 import app.simplecloud.controller.runtime.server.ServerNumericalIdRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.runtime.server.ServerService
+import app.simplecloud.controller.shared.auth.AuthCallCredentials
+import app.simplecloud.controller.shared.auth.AuthSecretInterceptor
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Server
@@ -23,8 +23,8 @@ class ControllerRuntime(
 ) {
 
     private val logger = LogManager.getLogger(ControllerRuntime::class.java)
-    private val forwardingSecretHandler = ForwardingSecretHandler(controllerStartCommand.velocitySecretPath)
     private val database = DatabaseFactory.createDatabase(controllerStartCommand.databaseUrl)
+    private val authCallCredentials = AuthCallCredentials(controllerStartCommand.authSecret)
 
     private val groupRepository = GroupRepository(controllerStartCommand.groupPath)
     private val numericalIdRepository = ServerNumericalIdRepository()
@@ -35,7 +35,8 @@ class ControllerRuntime(
         serverRepository,
         hostRepository,
         numericalIdRepository,
-        createManagedChannel()
+        createManagedChannel(),
+        authCallCredentials
     )
     private val server = createGrpcServer()
 
@@ -83,7 +84,17 @@ class ControllerRuntime(
     private fun createGrpcServer(): Server {
         return ServerBuilder.forPort(controllerStartCommand.grpcPort)
             .addService(GroupService(groupRepository))
-            .addService(ServerService(numericalIdRepository, serverRepository, hostRepository, groupRepository, forwardingSecretHandler))
+            .addService(
+                ServerService(
+                    numericalIdRepository,
+                    serverRepository,
+                    hostRepository,
+                    groupRepository,
+                    controllerStartCommand.forwardingSecret,
+                    authCallCredentials
+                )
+            )
+            .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret))
             .build()
     }
 
