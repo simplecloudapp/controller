@@ -19,7 +19,7 @@ class Controller {
             private set
 
         fun connect() {
-            val authSecret = System.getenv("GRPC_SECRET")
+            val authSecret = System.getenv("CONTROLLER_SECRET")
             connect(authSecret)
         }
 

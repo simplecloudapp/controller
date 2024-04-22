@@ -8,6 +8,9 @@ import app.simplecloud.controller.shared.group.Group
 import build.buf.gen.simplecloud.controller.v1.ControllerGroupServiceGrpc
 import build.buf.gen.simplecloud.controller.v1.GetGroupByNameRequest
 import app.simplecloud.controller.shared.status.ApiResponse
+import build.buf.gen.simplecloud.controller.v1.GetAllGroupsRequest
+import build.buf.gen.simplecloud.controller.v1.GetGroupsByTypeRequest
+import build.buf.gen.simplecloud.controller.v1.ServerType
 import java.util.concurrent.CompletableFuture
 
 class GroupApiImpl(
@@ -51,8 +54,22 @@ class GroupApiImpl(
             }
     }
 
+    override fun updateGroup(group: Group): CompletableFuture<ApiResponse> {
+        return groupServiceStub.updateGroup(group.toDefinition()).toCompletable().thenApply {
+            return@thenApply ApiResponse.fromDefinition(it)
+        }
+    }
+
     override fun getAllGroups(): CompletableFuture<List<Group>> {
-        TODO("Not yet implemented")
+        return groupServiceStub.getAllGroups(GetAllGroupsRequest.newBuilder().build()).toCompletable().thenApply {
+            return@thenApply it.groupsList.map { group -> Group.fromDefinition(group) }
+        }
+    }
+
+    override fun getGroupsByType(type: ServerType): CompletableFuture<List<Group>> {
+        return groupServiceStub.getGroupsByType(GetGroupsByTypeRequest.newBuilder().setType(type).build()).toCompletable().thenApply {
+            return@thenApply it.groupsList.map { group -> Group.fromDefinition(group) }
+        }
     }
 
 }
