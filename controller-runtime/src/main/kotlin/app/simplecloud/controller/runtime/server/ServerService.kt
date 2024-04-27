@@ -59,6 +59,7 @@ class ServerService(
     ) {
         val servers = serverRepository.getAll().map { it.toDefinition() }
         responseObserver.onNext(GetAllServersResponse.newBuilder().addAllServers(servers).build())
+        responseObserver.onCompleted()
     }
 
     override fun getServerByNumerical(
