@@ -1,4 +1,4 @@
-package app.simplecloud.controller.api.group
+package app.simplecloud.controller.api
 
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.status.ApiResponse

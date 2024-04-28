@@ -1,7 +1,6 @@
-package app.simplecloud.controller.api.group.impl
+package app.simplecloud.controller.api.impl
 
-import app.simplecloud.controller.api.Controller
-import app.simplecloud.controller.api.group.GroupApi
+import app.simplecloud.controller.api.GroupApi
 import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
@@ -11,13 +10,13 @@ import app.simplecloud.controller.shared.status.ApiResponse
 import build.buf.gen.simplecloud.controller.v1.GetAllGroupsRequest
 import build.buf.gen.simplecloud.controller.v1.GetGroupsByTypeRequest
 import build.buf.gen.simplecloud.controller.v1.ServerType
+import io.grpc.ManagedChannel
 import java.util.concurrent.CompletableFuture
 
 class GroupApiImpl(
+    managedChannel: ManagedChannel,
     authCallCredentials: AuthCallCredentials
 ) : GroupApi {
-
-    private val managedChannel = Controller.createManagedChannelFromEnv()
 
     private val groupServiceStub: ControllerGroupServiceGrpc.ControllerGroupServiceFutureStub =
         ControllerGroupServiceGrpc.newFutureStub(managedChannel)

@@ -1,4 +1,4 @@
-package app.simplecloud.controller.api.server
+package app.simplecloud.controller.api
 
 import app.simplecloud.controller.shared.group.Group
 import build.buf.gen.simplecloud.controller.v1.ServerType
