@@ -18,7 +18,7 @@ import kotlin.math.min
  * Date: 20.04.24
  * Time: 16:37
  * @author Frederick Baier
- *
+ *s
  */
 class GroupReconciler(
     private val serverRepository: ServerRepository,
@@ -29,7 +29,7 @@ class GroupReconciler(
 ) {
 
     private val logger = LogManager.getLogger(GroupReconciler::class.java)
-    private val servers = this.serverRepository.findServersByGroup(this.group.name)
+    private val servers = this.serverRepository.findServersByGroup(this.group.name).get()
 
     private val availableServerCount = calculateAvailableServerCount()
 
@@ -93,11 +93,11 @@ class GroupReconciler(
     }
 
     private fun startServers() {
-        if (!serverHostRepository.areServerHostsAvailable())
-            return
-
-        if (isNewServerNeeded())
-            startServer()
+        serverHostRepository.areServerHostsAvailable().thenApply {
+            if (!it) return@thenApply
+            if (isNewServerNeeded())
+                startServer()
+        }
     }
 
     private fun startServer() {

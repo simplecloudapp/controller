@@ -13,24 +13,31 @@ class GroupService(
         request: GetGroupByNameRequest,
         responseObserver: StreamObserver<GetGroupByNameResponse>
     ) {
-        val group = groupRepository.find(request.name)
-        if (group == null) {
-            responseObserver.onError(Exception("Group not found"))
-            return
+        groupRepository.find(request.name).thenApply { group ->
+            if (group == null) {
+                responseObserver.onError(Exception("Group not found"))
+                return@thenApply
+            }
+
+            val response = GetGroupByNameResponse.newBuilder()
+                .setGroup(group.toDefinition())
+                .build()
+
+            responseObserver.onNext(response)
+            responseObserver.onCompleted()
         }
 
-        val response = GetGroupByNameResponse.newBuilder()
-            .setGroup(group.toDefinition())
-            .build()
-
-        responseObserver.onNext(response)
-        responseObserver.onCompleted()
     }
 
     override fun getAllGroups(request: GetAllGroupsRequest, responseObserver: StreamObserver<GetAllGroupsResponse>) {
-        val response = GetAllGroupsResponse.newBuilder().addAllGroups(groupRepository.getAll().map { it.toDefinition() }).build()
-        responseObserver.onNext(response)
-        responseObserver.onCompleted()
+        groupRepository.getAll().thenApply { groups ->
+            val response = GetAllGroupsResponse.newBuilder()
+                .addAllGroups(groups.map { it.toDefinition() })
+                .build()
+            responseObserver.onNext(response)
+            responseObserver.onCompleted()
+        }
+
     }
 
     override fun getGroupsByType(
@@ -38,9 +45,14 @@ class GroupService(
         responseObserver: StreamObserver<GetGroupsByTypeResponse>
     ) {
         val type = request.type
-        val response = GetGroupsByTypeResponse.newBuilder().addAllGroups(groupRepository.getAll().filter { it.type == type }.map { it.toDefinition() }).build()
-        responseObserver.onNext(response)
-        responseObserver.onCompleted()
+        groupRepository.getAll().thenApply { groups ->
+            val response = GetGroupsByTypeResponse.newBuilder()
+                .addAllGroups(groups.filter { it.type == type }.map { it.toDefinition() })
+                .build()
+            responseObserver.onNext(response)
+            responseObserver.onCompleted()
+        }
+
     }
 
     override fun updateGroup(request: GroupDefinition, responseObserver: StreamObserver<StatusResponse>) {
@@ -61,19 +73,20 @@ class GroupService(
     }
 
     override fun deleteGroupByName(request: GetGroupByNameRequest, responseObserver: StreamObserver<StatusResponse>) {
-        val group = groupRepository.find(request.name)
-        if (group == null) {
-            responseObserver.onNext(ApiResponse(status = "error").toDefinition())
-            responseObserver.onCompleted()
-            return
+        groupRepository.find(request.name).thenApply { group ->
+            if (group == null) {
+                responseObserver.onNext(ApiResponse(status = "error").toDefinition())
+                responseObserver.onCompleted()
+                return@thenApply
+            }
+            groupRepository.delete(group).thenApply { successfullyDeleted ->
+                responseObserver.onNext(ApiResponse(status = if (successfullyDeleted) "success" else "error").toDefinition())
+                responseObserver.onCompleted()
+            }.exceptionally {
+                responseObserver.onError(it)
+            }
         }
-        try {
-            val successfullyDeleted = groupRepository.delete(group)
-            responseObserver.onNext(ApiResponse(status = if (successfullyDeleted) "success" else "error").toDefinition())
-            responseObserver.onCompleted()
-        } catch (e: Exception) {
-            responseObserver.onError(e)
-        }
+
     }
 
 }

@@ -4,8 +4,14 @@ import app.simplecloud.controller.api.impl.ControllerApiImpl
 
 interface ControllerApi {
 
+    /**
+     * @return the Controller [GroupApi]
+     */
     fun getGroups(): GroupApi
 
+    /**
+     * @return the Controller [ServerApi]
+     */
     fun getServers(): ServerApi
 
     companion object {

@@ -9,36 +9,33 @@ import org.spongepowered.configurate.yaml.NodeStyle
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.io.File
 import java.nio.file.*
+import java.util.concurrent.CompletableFuture
 import kotlin.io.path.name
 
 
-abstract class YamlDirectoryRepository<I, T>(
+abstract class YamlDirectoryRepository<E, I>(
     private val directory: Path,
-    private val clazz: Class<T>,
-) {
+    private val clazz: Class<E>,
+): LoadableRepository<E, I, List<String>> {
 
     private val logger = LogManager.getLogger(this::class.java)
 
     private val watchService = FileSystems.getDefault().newWatchService()
     private val loaders = mutableMapOf<File, YamlConfigurationLoader>()
-    protected val entities = mutableMapOf<File, T>()
+    protected val entities = mutableMapOf<File, E>()
 
     abstract fun getFileName(identifier: I): String
 
-    abstract fun find(identifier: I): T?
-
-    abstract fun save(entity: T)
-
-    fun delete(entity: T): Boolean {
-        val file = entities.keys.find { entities[it] == entity } ?: return false
-        return delete(file)
+    override fun delete(element: E): CompletableFuture<Boolean> {
+        val file = entities.keys.find { entities[it] == element } ?: return CompletableFuture.completedFuture(false)
+        return CompletableFuture.completedFuture(deleteFile(file))
     }
 
-    fun findAll(): List<T> {
-        return entities.values.toList()
+    override fun getAll(): CompletableFuture<List<E>> {
+        return CompletableFuture.completedFuture(entities.values.toList())
     }
 
-    fun loadAll(): List<String> {
+    override fun load(): List<String> {
         if (!directory.toFile().exists()) {
             directory.toFile().mkdirs()
         }
@@ -78,13 +75,13 @@ abstract class YamlDirectoryRepository<I, T>(
         return true
     }
 
-    private fun delete(file: File): Boolean {
+    private fun deleteFile(file: File): Boolean {
         val deletedSuccessfully = file.delete()
         val removedSuccessfully = entities.remove(file) != null
         return deletedSuccessfully && removedSuccessfully
     }
 
-    protected fun save(fileName: String, entity: T) {
+    protected fun save(fileName: String, entity: E) {
         val file = directory.resolve(fileName).toFile()
         val loader = getOrCreateLoader(file)
         val node = loader.createNode(ConfigurationOptions.defaults())
@@ -133,7 +130,7 @@ abstract class YamlDirectoryRepository<I, T>(
                         }
 
                         StandardWatchEventKinds.ENTRY_DELETE -> {
-                            delete(resolvedPath.toFile())
+                            deleteFile(resolvedPath.toFile())
                         }
                     }
                 }

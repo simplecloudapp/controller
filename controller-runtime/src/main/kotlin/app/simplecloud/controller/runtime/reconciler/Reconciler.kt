@@ -21,9 +21,16 @@ class Reconciler(
         .withCallCredentials(authCallCredentials)
 
     fun reconcile() {
-        this.groupRepository.findAll().forEach { group ->
-            GroupReconciler(serverRepository, serverHostRepository, numericalIdRepository, serverStub, group)
-                .reconcile()
+        this.groupRepository.getAll().thenApply {
+            it.forEach { group ->
+                GroupReconciler(
+                    serverRepository,
+                    serverHostRepository,
+                    numericalIdRepository,
+                    serverStub,
+                    group
+                ).reconcile()
+            }
         }
     }
 

@@ -7,7 +7,7 @@ import io.grpc.ConnectivityState
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
-class ServerHostRepository : Repository<ServerHost>() {
+class ServerHostRepository : Repository<ServerHost, ServerRepository> {
 
     private val hosts: ConcurrentHashMap<String, ServerHost> = ConcurrentHashMap()
 
@@ -15,46 +15,35 @@ class ServerHostRepository : Repository<ServerHost>() {
         return hosts.getOrDefault(hosts.keys.firstOrNull { it == id }, null)
     }
 
-    fun add(serverHost: ServerHost) {
-        hosts[serverHost.id] = serverHost
+    override fun save(element: ServerHost) {
+        hosts[element.id] = element
     }
 
-    fun remove(serverHost: ServerHost) {
-        hosts.remove(serverHost.id, serverHost)
-    }
-
-    fun findLaziestServerHost(serverRepository: ServerRepository): ServerHost? {
-        var lastAmount = Int.MAX_VALUE
-        var lastHost: ServerHost? = null
-        for (host: ServerHost in hosts.values) {
-            val amount = serverRepository.findServersByHostId(host.id).size
-            if (amount < lastAmount) {
-                lastAmount = amount
-                lastHost = host
+    override fun find(identifier: ServerRepository): CompletableFuture<ServerHost?> {
+        return CompletableFuture.supplyAsync {
+            return@supplyAsync hosts.values.minByOrNull { host ->
+                identifier.findServersByHostId(host.id).thenApply { return@thenApply it.size }.get()
             }
         }
-        return lastHost
     }
 
-    fun areServerHostsAvailable(): Boolean {
-        return hosts.any {
-            val channel = it.value.createChannel()
-            val state = channel.getState(true)
-            channel.shutdown()
-            state == ConnectivityState.IDLE || state == ConnectivityState.READY
+    fun areServerHostsAvailable(): CompletableFuture<Boolean> {
+        return CompletableFuture.supplyAsync {
+            hosts.any {
+                val channel = it.value.createChannel()
+                val state = channel.getState(true)
+                channel.shutdown()
+                state == ConnectivityState.IDLE || state == ConnectivityState.READY
+            }
         }
-    }
-
-    override fun load() {
-        throw UnsupportedOperationException("This method is not implemented.")
     }
 
     override fun delete(element: ServerHost): CompletableFuture<Boolean> {
         return CompletableFuture.completedFuture(hosts.remove(element.id, element))
     }
 
-    override fun save(element: ServerHost) {
-        throw UnsupportedOperationException("This method is not implemented.")
+    override fun getAll(): CompletableFuture<List<ServerHost>> {
+        return CompletableFuture.completedFuture(hosts.values.toList())
     }
 
 }
