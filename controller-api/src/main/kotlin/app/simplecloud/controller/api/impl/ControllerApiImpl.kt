@@ -17,10 +17,16 @@ class ControllerApiImpl(
     private val groups: GroupApi = GroupApiImpl(managedChannel, authCallCredentials)
     private val servers: ServerApi = ServerApiImpl(managedChannel, authCallCredentials)
 
+    /**
+     * @return The controllers [GroupApi]
+     */
     override fun getGroups(): GroupApi {
         return groups
     }
 
+    /**
+     * @return The controllers [ServerApi]
+     */
     override fun getServers(): ServerApi {
         return servers
     }
