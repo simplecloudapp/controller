@@ -14,12 +14,6 @@ import org.apache.logging.log4j.LogManager
 import java.time.LocalDateTime
 import kotlin.math.min
 
-/**
- * Date: 20.04.24
- * Time: 16:37
- * @author Frederick Baier
- *s
- */
 class GroupReconciler(
     private val serverRepository: ServerRepository,
     private val serverHostRepository: ServerHostRepository,
