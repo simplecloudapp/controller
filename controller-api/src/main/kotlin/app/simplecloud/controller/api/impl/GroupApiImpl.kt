@@ -6,7 +6,6 @@ import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import build.buf.gen.simplecloud.controller.v1.ControllerGroupServiceGrpc
 import build.buf.gen.simplecloud.controller.v1.GetGroupByNameRequest
-import app.simplecloud.controller.shared.status.ApiResponse
 import build.buf.gen.simplecloud.controller.v1.GetAllGroupsRequest
 import build.buf.gen.simplecloud.controller.v1.GetGroupsByTypeRequest
 import build.buf.gen.simplecloud.controller.v1.ServerType
@@ -33,29 +32,29 @@ class GroupApiImpl(
             }
     }
 
-    override fun deleteGroup(name: String): CompletableFuture<ApiResponse> {
+    override fun deleteGroup(name: String): CompletableFuture<Group> {
         return groupServiceStub.deleteGroupByName(
             GetGroupByNameRequest.newBuilder()
                 .setName(name)
                 .build()
         ).toCompletable()
             .thenApply {
-                ApiResponse.fromDefinition(it)
+                Group.fromDefinition(it)
             }
     }
 
-    override fun createGroup(group: Group): CompletableFuture<ApiResponse> {
+    override fun createGroup(group: Group): CompletableFuture<Group> {
         return groupServiceStub.createGroup(
             group.toDefinition()
         ).toCompletable()
             .thenApply {
-                ApiResponse.fromDefinition(it)
+                Group.fromDefinition(it)
             }
     }
 
-    override fun updateGroup(group: Group): CompletableFuture<ApiResponse> {
+    override fun updateGroup(group: Group): CompletableFuture<Group> {
         return groupServiceStub.updateGroup(group.toDefinition()).toCompletable().thenApply {
-            return@thenApply ApiResponse.fromDefinition(it)
+            return@thenApply Group.fromDefinition(it)
         }
     }
 

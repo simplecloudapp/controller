@@ -10,7 +10,7 @@ plugins {
 
 allprojects {
     group = "app.simplecloud.controller"
-    version = "0.0.26-EXPERIMENTAL"
+    version = "0.0.27-EXPERIMENTAL"
 
     repositories {
         mavenCentral()
@@ -73,6 +73,10 @@ subprojects {
                 developer {
                     id.set("fllipeis")
                     email.set("p.eistrach@gmail.com")
+                }
+                developer {
+                    id.set("dayyeeet")
+                    email.set("david@cappell.net")
                 }
             }
             licenses {
