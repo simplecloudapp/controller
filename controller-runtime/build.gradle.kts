@@ -11,6 +11,7 @@ dependencies {
     jooqCodegen(rootProject.libs.jooqMetaExtensions)
     implementation(rootProject.libs.bundles.log4j)
     implementation(rootProject.libs.clikt)
+    implementation(rootProject.libs.spotifyCompletableFutures)
 }
 
 application {

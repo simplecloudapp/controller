@@ -3,6 +3,7 @@ package app.simplecloud.controller.runtime.host
 import app.simplecloud.controller.runtime.Repository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.shared.host.ServerHost
+import com.spotify.futures.CompletableFutures
 import io.grpc.ConnectivityState
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -20,10 +21,9 @@ class ServerHostRepository : Repository<ServerHost, ServerRepository> {
     }
 
     override fun find(identifier: ServerRepository): CompletableFuture<ServerHost?> {
-        return CompletableFuture.supplyAsync {
-            return@supplyAsync hosts.values.minByOrNull { host ->
-                identifier.findServersByHostId(host.id).thenApply { return@thenApply it.size }.get()
-            }
+        return mapHostsToServerHostWithServerCount(identifier).thenApply {
+            val serverHostWithServerCount = it.minByOrNull { it.serverCount }
+            serverHostWithServerCount?.serverHost
         }
     }
 
@@ -44,6 +44,16 @@ class ServerHostRepository : Repository<ServerHost, ServerRepository> {
 
     override fun getAll(): CompletableFuture<List<ServerHost>> {
         return CompletableFuture.completedFuture(hosts.values.toList())
+    }
+
+    private fun mapHostsToServerHostWithServerCount(identifier: ServerRepository): CompletableFuture<List<ServerHostWithServerCount>> {
+        return CompletableFutures.allAsList(
+            hosts.values.map { serverHost ->
+                identifier.findServersByHostId(serverHost.id).thenApply {
+                    ServerHostWithServerCount(serverHost, it.size)
+                }
+            }
+        )
     }
 
 }
