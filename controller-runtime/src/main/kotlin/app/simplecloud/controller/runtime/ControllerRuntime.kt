@@ -56,7 +56,12 @@ class ControllerRuntime(
 
     private fun loadServers() {
         logger.info("Loading servers...")
-        serverRepository.load()
+        val loadedServers = serverRepository.load()
+        if (loadedServers.isEmpty()) {
+            return
+        }
+
+        logger.info("Loaded servers from cache: ${loadedServers.joinToString { "${it.group}-${it.numericalId}" }}")
     }
 
     private fun startGrpcServer() {
@@ -77,9 +82,10 @@ class ControllerRuntime(
         val loadedGroups = groupRepository.load()
         if (loadedGroups.isEmpty()) {
             logger.warn("No groups found.")
+            return
         }
 
-        logger.info("Loaded groups: ${loadedGroups.joinToString(",")}")
+        logger.info("Loaded groups: ${loadedGroups.joinToString { it.name }}")
     }
 
     private fun createGrpcServer(): Server {

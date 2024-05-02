@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture
 class ServerRepository(
     private val database: Database,
     private val numericalIdRepository: ServerNumericalIdRepository
-) : LoadableRepository<Server, String, Unit> {
+) : LoadableRepository<Server, String> {
 
 
     override fun find(identifier: String): CompletableFuture<Server?> {
@@ -218,7 +218,7 @@ class ServerRepository(
         }
     }
 
-    override fun load() {
+    override fun load(): List<Server> {
         val query = database.context.select()
             .from(CLOUD_SERVERS)
             .fetchInto(CLOUD_SERVERS)
@@ -226,6 +226,7 @@ class ServerRepository(
         list.forEach {
             numericalIdRepository.saveNumericalId(it.group, it.numericalId)
         }
+        return list
     }
 
 }

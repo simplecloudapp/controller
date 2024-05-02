@@ -10,13 +10,12 @@ import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.io.File
 import java.nio.file.*
 import java.util.concurrent.CompletableFuture
-import kotlin.io.path.name
 
 
 abstract class YamlDirectoryRepository<E, I>(
     private val directory: Path,
     private val clazz: Class<E>,
-): LoadableRepository<E, I, List<String>> {
+) : LoadableRepository<E, I> {
 
     private val logger = LogManager.getLogger(this::class.java)
 
@@ -35,44 +34,36 @@ abstract class YamlDirectoryRepository<E, I>(
         return CompletableFuture.completedFuture(entities.values.toList())
     }
 
-    override fun load(): List<String> {
+    override fun load(): List<E> {
         if (!directory.toFile().exists()) {
             directory.toFile().mkdirs()
         }
 
-        val fileNames = mutableListOf<String>()
-
-        Files.list(directory)
-            .filter { !it.toFile().isDirectory && it.toString().endsWith(".yml") }
-            .forEach {
-                val successFullyLoaded = load(it.toFile())
-                if (successFullyLoaded) {
-                    fileNames.add(it.name)
-                }
-            }
-
         registerWatcher()
-        return fileNames
+
+        return Files.list(directory)
+            .toList()
+            .filter { !it.toFile().isDirectory && it.toString().endsWith(".yml") }
+            .mapNotNull { load(it.toFile()) }
     }
 
-    private fun load(file: File): Boolean {
+    private fun load(file: File): E? {
         try {
             val loader = getOrCreateLoader(file)
             val node = loader.load(ConfigurationOptions.defaults())
-            val entity = node.get(clazz) ?: return false
+            val entity = node.get(clazz) ?: return null
             entities[file] = entity
+            return entity
         } catch (ex: ParsingException) {
             val existedBefore = entities.containsKey(file)
             if (existedBefore) {
                 logger.error("Could not load file ${file.name}. Switching back to an older version.")
-                return false
+                return null
             }
 
             logger.error("Could not load file ${file.name}. Make sure it's correctly formatted!")
-            return false
+            return null
         }
-
-        return true
     }
 
     private fun deleteFile(file: File): Boolean {
