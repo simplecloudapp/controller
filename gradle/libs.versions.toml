@@ -1,21 +1,49 @@
 [versions]
 kotlin = "1.8.0"
+kotlinCoroutines = "1.4.2"
 shadow = "8.1.1"
 log4j = "2.20.0"
-protobuf = "3.23.1"
-protobufPlugin = "0.8.19"
-grpcVersion = "1.55.1"
+protobuf = "3.25.2"
+grpc = "1.61.0"
+grpcKotlin = "1.4.1"
+simpleCloudProtoSpecs = "1.4.1.1.20240504121939.09af2f3cc691"
+jooq = "3.19.3"
+configurate = "4.1.2"
+sqliteJdbc = "3.44.1.0"
+clikt = "4.3.0"
+sonatypeCentralPortalPublisher = "1.2.3"
+spotifyCompletableFutures = "0.3.6"
 
 [libraries]
 kotlinJvm = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 kotlinTest = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlinCoroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
+
 log4jCore = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
 log4jApi = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4jSlf4j = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
-protobuf = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
-grpcStub = { module = "io.grpc:grpc-stub", version.ref = "grpcVersion" }
-grpcProtobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpcVersion" }
-grpcNettyShaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpcVersion" }
+
+protobufKotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
+
+grpcStub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+grpcKotlinStub = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpcKotlin" }
+grpcProtobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+grpcNettyShaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
+
+simpleCloudProtoSpecs = { module = "build.buf.gen:simplecloud_proto-specs_grpc_kotlin", version.ref = "simpleCloudProtoSpecs" }
+
+qooq = { module = "org.jooq:jooq", version.ref = "jooq" }
+qooqMeta = { module = "org.jooq:jooq-meta", version.ref = "jooq" }
+jooqMetaExtensions = { module = "org.jooq:jooq-meta-extensions", version.ref = "jooq" }
+
+configurateYaml = { module = "org.spongepowered:configurate-yaml", version.ref = "configurate" }
+configurateExtraKotlin = { module = "org.spongepowered:configurate-extra-kotlin", version.ref = "configurate" }
+
+sqliteJdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqliteJdbc" }
+
+clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
+
+spotifyCompletableFutures = { module = "com.spotify:completable-futures", version.ref = "spotifyCompletableFutures" }
 
 [bundles]
 log4j = [
@@ -24,13 +52,24 @@ log4j = [
     "log4jSlf4j"
 ]
 proto = [
-    "protobuf",
+    "protobufKotlin",
     "grpcStub",
+    "grpcKotlinStub",
     "grpcProtobuf",
-    "grpcNettyShaded"
+    "grpcNettyShaded",
+    "simpleCloudProtoSpecs"
+]
+jooq = [
+    "qooq",
+    "qooqMeta"
+]
+configurate = [
+    "configurateYaml",
+    "configurateExtraKotlin"
 ]
 
 [plugins]
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
-protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
+jooqCodegen = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }
+sonatypeCentralPortalPublisher = { id = "net.thebugmc.gradle.sonatype-central-portal-publisher", version.ref = "sonatypeCentralPortalPublisher" }

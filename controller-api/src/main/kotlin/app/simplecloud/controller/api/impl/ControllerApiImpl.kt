@@ -1,30 +1,34 @@
 package app.simplecloud.controller.api.impl
 
 import app.simplecloud.controller.api.ControllerApi
-import app.simplecloud.controller.shared.future.toCompletable
-import app.simplecloud.controller.shared.group.Group
-import app.simplecloud.controller.shared.proto.ControllerGroupServiceGrpc
-import app.simplecloud.controller.shared.proto.GetGroupByNameRequest
+import app.simplecloud.controller.api.GroupApi
+import app.simplecloud.controller.api.ServerApi
+import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
-import java.util.concurrent.CompletableFuture
 
-class ControllerApiImpl : ControllerApi {
+class ControllerApiImpl(
+    authSecret: String
+): ControllerApi {
+
+    private val authCallCredentials = AuthCallCredentials(authSecret)
 
     private val managedChannel = createManagedChannelFromEnv()
+    private val groups: GroupApi = GroupApiImpl(managedChannel, authCallCredentials)
+    private val servers: ServerApi = ServerApiImpl(managedChannel, authCallCredentials)
 
-    protected val groupServiceStub: ControllerGroupServiceGrpc.ControllerGroupServiceFutureStub =
-        ControllerGroupServiceGrpc.newFutureStub(managedChannel)
+    /**
+     * @return The controllers [GroupApi]
+     */
+    override fun getGroups(): GroupApi {
+        return groups
+    }
 
-    override fun getGroupByName(name: String): CompletableFuture<Group> {
-        return groupServiceStub.getGroupByName(
-            GetGroupByNameRequest.newBuilder()
-                .setName(name)
-                .build()
-        ).toCompletable()
-            .thenApply {
-                Group.fromDefinition(it.group)
-            }
+    /**
+     * @return The controllers [ServerApi]
+     */
+    override fun getServers(): ServerApi {
+        return servers
     }
 
     private fun createManagedChannelFromEnv(): ManagedChannel {
