@@ -14,7 +14,7 @@ data class Group(
     val minOnlineCount: Long = 0,
     val maxOnlineCount: Long = 0,
     val maxPlayers: Long = 0,
-    val newServerPlayerRatio: Long = 100,
+    val newServerPlayerRatio: Long = -1,
     val properties: Map<String, String> = mapOf()
 ) {
 

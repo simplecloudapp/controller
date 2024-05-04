@@ -40,13 +40,16 @@ class GroupReconciler(
     }
 
     private fun isOnlineCountBelowPlayerRatio(server: Server): Boolean {
+        if (this.group.newServerPlayerRatio <= 0) {
+            return true
+        }
         return (server.playerCount / server.maxPlayers) * 100 < this.group.newServerPlayerRatio
     }
 
     private fun hasAvailableState(server: Server): Boolean {
         return server.state == ServerState.AVAILABLE
-                    || server.state == ServerState.STARTING
-                    || server.state == ServerState.PREPARING
+                || server.state == ServerState.STARTING
+                || server.state == ServerState.PREPARING
     }
 
     private fun cleanupServers() {
