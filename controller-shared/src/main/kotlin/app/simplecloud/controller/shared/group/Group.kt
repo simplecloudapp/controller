@@ -14,6 +14,7 @@ data class Group(
     val minOnlineCount: Long = 0,
     val maxOnlineCount: Long = 0,
     val maxPlayers: Long = 0,
+    val newServerPlayerRatio: Long = 100,
     val properties: Map<String, String> = mapOf()
 ) {
 
@@ -27,6 +28,7 @@ data class Group(
             .setMinimumOnlineCount(minOnlineCount)
             .setMaximumOnlineCount(maxOnlineCount)
             .setMaxPlayers(maxPlayers)
+            .setNewServerPlayerRatio(newServerPlayerRatio)
             .putAllProperties(properties)
             .build()
     }
@@ -43,6 +45,7 @@ data class Group(
                 groupDefinition.minimumOnlineCount,
                 groupDefinition.maximumOnlineCount,
                 groupDefinition.maxPlayers,
+                groupDefinition.newServerPlayerRatio,
                 groupDefinition.propertiesMap
             )
         }
