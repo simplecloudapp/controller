@@ -6,7 +6,6 @@ import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import build.buf.gen.simplecloud.controller.v1.*
 import app.simplecloud.controller.shared.server.Server
-import app.simplecloud.controller.shared.status.ApiResponse
 import io.grpc.ManagedChannel
 import java.util.concurrent.CompletableFuture
 
@@ -68,39 +67,39 @@ class ServerApiImpl(
         }
     }
 
-    override fun stopServer(groupName: String, numericalId: Long): CompletableFuture<ApiResponse> {
+    override fun stopServer(groupName: String, numericalId: Long): CompletableFuture<Server> {
         return serverServiceStub.stopServerByNumerical(
             StopServerByNumericalRequest.newBuilder()
                 .setGroup(groupName)
                 .setNumericalId(numericalId)
                 .build()
         ).toCompletable().thenApply {
-            ApiResponse.fromDefinition(it)
+            Server.fromDefinition(it)
         }
     }
 
-    override fun stopServer(id: String): CompletableFuture<ApiResponse> {
+    override fun stopServer(id: String): CompletableFuture<Server> {
         return serverServiceStub.stopServer(
             ServerIdRequest.newBuilder()
                 .setId(id)
                 .build()
         ).toCompletable().thenApply {
-            ApiResponse.fromDefinition(it)
+            Server.fromDefinition(it)
         }
     }
 
-    override fun updateServerState(id: String, state: ServerState): CompletableFuture<ApiResponse> {
+    override fun updateServerState(id: String, state: ServerState): CompletableFuture<Server> {
         return serverServiceStub.updateServerState(
             ServerUpdateStateRequest.newBuilder()
                 .setState(state)
                 .setId(id)
                 .build()
         ).toCompletable().thenApply {
-            return@thenApply ApiResponse.fromDefinition(it)
+            return@thenApply Server.fromDefinition(it)
         }
     }
 
-    override fun updateServerProperty(id: String, key: String, value: Any): CompletableFuture<ApiResponse> {
+    override fun updateServerProperty(id: String, key: String, value: Any): CompletableFuture<Server> {
         return serverServiceStub.updateServerProperty(
             ServerUpdatePropertyRequest.newBuilder()
                 .setKey(key)
@@ -108,7 +107,7 @@ class ServerApiImpl(
                 .setId(id)
                 .build()
         ).toCompletable().thenApply {
-            return@thenApply ApiResponse.fromDefinition(it)
+            return@thenApply Server.fromDefinition(it)
         }
     }
 }

@@ -3,7 +3,6 @@ package app.simplecloud.controller.api
 import app.simplecloud.controller.shared.group.Group
 import build.buf.gen.simplecloud.controller.v1.ServerType
 import app.simplecloud.controller.shared.server.Server
-import app.simplecloud.controller.shared.status.ApiResponse
 import build.buf.gen.simplecloud.controller.v1.ServerState
 import java.util.concurrent.CompletableFuture
 
@@ -47,29 +46,29 @@ interface ServerApi {
     /**
      * @param groupName the group name of the servers group.
      * @param numericalId the numerical id of the server.
-     * @return a [CompletableFuture] with a [ApiResponse].
+     * @return a [CompletableFuture] with the stopped [Server].
      */
-    fun stopServer(groupName: String, numericalId: Long): CompletableFuture<ApiResponse>
+    fun stopServer(groupName: String, numericalId: Long): CompletableFuture<Server>
 
     /**
      * @param id the id of the server.
-     * @return a [CompletableFuture] with a [ApiResponse].
+     * @return a [CompletableFuture] with the stopped [Server].
      */
-    fun stopServer(id: String): CompletableFuture<ApiResponse>
+    fun stopServer(id: String): CompletableFuture<Server>
 
     /**
      * @param id the id of the server.
      * @param state the new state of the server.
-     * @return a [CompletableFuture] with a [ApiResponse].
+     * @return a [CompletableFuture] with the updated [Server].
      */
-    fun updateServerState(id: String, state: ServerState): CompletableFuture<ApiResponse>
+    fun updateServerState(id: String, state: ServerState): CompletableFuture<Server>
 
     /**
      * @param id the id of the server.
      * @param key the server property key
      * @param value the new property value
-     * @return a [CompletableFuture] with a [ApiResponse].
+     * @return a [CompletableFuture] with the updated [Server].
      */
-    fun updateServerProperty(id: String, key: String, value: Any): CompletableFuture<ApiResponse>
+    fun updateServerProperty(id: String, key: String, value: Any): CompletableFuture<Server>
 
 }

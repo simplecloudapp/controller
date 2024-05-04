@@ -1,7 +1,6 @@
 package app.simplecloud.controller.api
 
 import app.simplecloud.controller.shared.group.Group
-import app.simplecloud.controller.shared.status.ApiResponse
 import build.buf.gen.simplecloud.controller.v1.ServerType
 import java.util.concurrent.CompletableFuture
 
@@ -15,22 +14,21 @@ interface GroupApi {
 
     /**
      * @param name the name of the group.
-     * @return a status [ApiResponse] of the delete state.
+     * @return the deleted [Group].
      */
-    fun deleteGroup(name: String): CompletableFuture<ApiResponse>
+    fun deleteGroup(name: String): CompletableFuture<Group>
 
     /**
      * @param group the [Group] to create.
-     * @return a status [ApiResponse] of the creation state.
+     * @return the created [Group].
      */
-    fun createGroup(group: Group): CompletableFuture<ApiResponse>
+    fun createGroup(group: Group): CompletableFuture<Group>
 
     /**
-     * @param group the [Group] to create.
-     * @return a status [ApiResponse] of the update state.
+     * @param group the [Group] to update.
+     * @return the updated [Group].
      */
-    fun updateGroup(group: Group): CompletableFuture<ApiResponse>
-
+    fun updateGroup(group: Group): CompletableFuture<Group>
     /**
      * @return a [CompletableFuture] with a list of all groups.
      */
