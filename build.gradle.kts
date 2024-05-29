@@ -61,8 +61,8 @@ subprojects {
     centralPortal {
         name = project.name
 
-        username = project.findProperty("sonatypeUsername") as String
-        password = project.findProperty("sonatypePassword") as String
+        username = project.findProperty("sonatypeUsername") as? String
+        password = project.findProperty("sonatypePassword") as? String
 
         pom {
             name.set("SimpleCloud controller")
