@@ -42,6 +42,27 @@ data class Server(
             .build()
     }
 
+    fun toEnv(): MutableMap<String, String> {
+        val map = mutableMapOf<String, String>()
+        map["SIMPLECLOUD_GROUP"] = this.group
+        map["SIMPLECLOUD_HOST"] = this.host ?: "unknown"
+        map["SIMPLECLOUD_IP"] = this.ip
+        map["SIMPLECLOUD_PORT"] = this.port.toString()
+        map["SIMPLECLOUD_UNIQUE_ID"] = this.uniqueId
+        map["SIMPLECLOUD_CREATED_AT"] = this.createdAt.toString()
+        map["SIMPLECLOUD_MAX_PLAYERS"] = this.maxPlayers.toString()
+        map["SIMPLECLOUD_NUMERICAL_ID"] = this.numericalId.toString()
+        map["SIMPLECLOUD_TYPE"] = this.type.toString()
+        map["SIMPLECLOUD_MAX_MEMORY"] = this.maxMemory.toString()
+        map["SIMPLECLOUD_MIN_MEMORY"] = this.minMemory.toString()
+        map.putAll(this.properties.map {
+            "SIMPLECLOUD_${
+                it.key.uppercase().replace(" ", "_").replace("-", "_")
+            }" to it.value
+        })
+        return map
+    }
+
     companion object {
         @JvmStatic
         fun fromDefinition(serverDefinition: ServerDefinition): Server {
