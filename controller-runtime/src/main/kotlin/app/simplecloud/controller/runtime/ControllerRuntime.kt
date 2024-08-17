@@ -11,6 +11,7 @@ import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.runtime.server.ServerService
 import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.auth.AuthSecretInterceptor
+import app.simplecloud.pubsub.PubSubService
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Server
@@ -40,10 +41,12 @@ class ControllerRuntime(
         authCallCredentials
     )
     private val server = createGrpcServer()
+    private val pubSubServer = createPubSubGrpcServer()
 
     fun start() {
         setupDatabase()
         startGrpcServer()
+        startPubSubGrpcServer()
         startReconciler()
         loadGroups()
         loadServers()
@@ -69,6 +72,14 @@ class ControllerRuntime(
         thread {
             server.start()
             server.awaitTermination()
+        }
+    }
+
+    private fun startPubSubGrpcServer() {
+        logger.info("Starting pubsub gRPC server...")
+        thread {
+            pubSubServer.start()
+            pubSubServer.awaitTermination()
         }
     }
 
@@ -101,6 +112,13 @@ class ControllerRuntime(
                     authCallCredentials
                 )
             )
+            .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret))
+            .build()
+    }
+
+    private fun createPubSubGrpcServer(): Server {
+        return ServerBuilder.forPort(controllerStartCommand.pubSubGrpcPort)
+            .addService(PubSubService())
             .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret))
             .build()
     }

@@ -1,6 +1,7 @@
 package app.simplecloud.controller.api
 
 import app.simplecloud.controller.api.impl.ControllerApiImpl
+import app.simplecloud.pubsub.PubSubClient
 
 interface ControllerApi {
 
@@ -13,6 +14,11 @@ interface ControllerApi {
      * @return the Controller [ServerApi]
      */
     fun getServers(): ServerApi
+
+    /**
+     * @return the [PubSubClient] to subscribe to Controller events and send messages
+     */
+    fun getPubSubClient(): PubSubClient
 
     companion object {
 

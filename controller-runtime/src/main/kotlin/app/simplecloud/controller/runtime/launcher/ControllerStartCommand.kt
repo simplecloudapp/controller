@@ -23,6 +23,8 @@ class ControllerStartCommand : CliktCommand() {
     val grpcHost: String by option(help = "Grpc host (default: localhost)", envvar = "GRPC_HOST").default("localhost")
     val grpcPort: Int by option(help = "Grpc port (default: 5816)", envvar = "GRPC_PORT").int().default(5816)
 
+    val pubSubGrpcPort: Int by option(help = "PubSub Grpc port (default: 5817)", envvar = "PUBSUB_GRPC_PORT").int().default(5817)
+
     private val authSecretPath: Path by option(
         help = "Path to auth secret file (default: .auth.secret)",
         envvar = "AUTH_SECRET_PATH"
