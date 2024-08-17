@@ -224,6 +224,8 @@ class ServerService(
                 } else {
                     startServer(host, group)
                 }
+            }.exceptionally {
+                logger.error("Error whilst starting server:", it)
             }
         }
     }
@@ -249,6 +251,7 @@ class ServerService(
             serverRepository.delete(server)
             numericalIdRepository.removeNumericalId(group.name, server.numericalId)
             channel.shutdown()
+            logger.error("Error whilst starting server:", it)
             throw it
         }
     }
@@ -285,10 +288,9 @@ class ServerService(
             stopServer(server.toDefinition()).thenApply {
                 responseObserver.onNext(it)
                 responseObserver.onCompleted()
-            }.exceptionally {
-                responseObserver.onError(it)
             }.get()
         }.exceptionally {
+            logger.error("Error whilst stopping server:", it)
             responseObserver.onError(it)
         }
     }
@@ -305,6 +307,9 @@ class ServerService(
             serverRepository.delete(Server.fromDefinition(server))
             channel.shutdown()
             return@thenApply it
+        }.exceptionally {
+            logger.error("Server stop error occured:", it)
+            throw it
         }
     }
 
