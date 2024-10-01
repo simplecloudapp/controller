@@ -71,7 +71,7 @@ class ServerApiImpl(
     override fun stopServer(groupName: String, numericalId: Long, stopCause: ServerStopCause): CompletableFuture<Server> {
         return serverServiceStub.stopServerByNumerical(
             StopServerByNumericalRequest.newBuilder()
-                .setServerGroup(groupName)
+                .setGroupName(groupName)
                 .setNumericalId(numericalId)
                 .setStopCause(stopCause)
                 .build()
@@ -84,7 +84,7 @@ class ServerApiImpl(
         return serverServiceStub.stopServer(
             StopServerRequest.newBuilder()
                 .setServerId(id)
-                .setCause(stopCause)
+                .setStopCause(stopCause)
                 .build()
         ).toCompletable().thenApply {
             Server.fromDefinition(it)
