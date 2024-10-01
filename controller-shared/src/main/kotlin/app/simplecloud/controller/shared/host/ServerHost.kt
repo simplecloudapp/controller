@@ -14,9 +14,9 @@ data class ServerHost(
 
     fun toDefinition(): ServerHostDefinition {
         return ServerHostDefinition.newBuilder()
-            .setHost(host)
-            .setPort(port)
-            .setUniqueId(id)
+            .setHostHost(host)
+            .setHostPort(port)
+            .setHostId(id)
             .build()
     }
 
@@ -24,9 +24,9 @@ data class ServerHost(
         @JvmStatic
         fun fromDefinition(serverHostDefinition: ServerHostDefinition): ServerHost {
             return ServerHost(
-                serverHostDefinition.uniqueId,
-                serverHostDefinition.host,
-                serverHostDefinition.port
+                serverHostDefinition.hostId,
+                serverHostDefinition.hostHost,
+                serverHostDefinition.hostPort
             )
         }
     }

@@ -8,6 +8,7 @@ import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.host.ServerHost
 import app.simplecloud.controller.shared.server.Server
+import app.simplecloud.controller.shared.time.ProtoBufTimestamp
 import build.buf.gen.simplecloud.controller.v1.*
 import io.grpc.Context
 import io.grpc.Status
@@ -28,8 +29,8 @@ class ServerService(
 
     private val logger = LogManager.getLogger(ServerService::class.java)
 
-    override fun attachServerHost(request: ServerHostDefinition, responseObserver: StreamObserver<ServerHostDefinition>) {
-        val serverHost = ServerHost.fromDefinition(request)
+    override fun attachServerHost(request: AttachServerHostRequest, responseObserver: StreamObserver<ServerHostDefinition>) {
+        val serverHost = ServerHost.fromDefinition(request.serverHost)
         try {
             hostRepository.delete(serverHost)
             hostRepository.save(serverHost)
@@ -82,7 +83,7 @@ class ServerService(
         request: GetServerByNumericalRequest,
         responseObserver: StreamObserver<ServerDefinition>
     ) {
-        serverRepository.findServerByNumerical(request.group, request.numericalId.toInt()).thenApply { server ->
+        serverRepository.findServerByNumerical(request.groupName, request.numericalId.toInt()).thenApply { server ->
             if (server == null) {
                 responseObserver.onError(
                     Status.NOT_FOUND
@@ -101,7 +102,7 @@ class ServerService(
         responseObserver: StreamObserver<ServerDefinition>
     ) {
 
-        serverRepository.findServerByNumerical(request.group, request.numericalId.toInt()).thenApply { server ->
+        serverRepository.findServerByNumerical(request.groupName, request.numericalId.toInt()).thenApply { server ->
             if (server == null) {
                 responseObserver.onError(
                     Status.NOT_FOUND
@@ -120,7 +121,7 @@ class ServerService(
 
     }
 
-    override fun updateServer(request: ServerUpdateRequest, responseObserver: StreamObserver<ServerDefinition>) {
+    override fun updateServer(request: UpdateServerRequest, responseObserver: StreamObserver<ServerDefinition>) {
         val deleted = request.deleted
         val server = Server.fromDefinition(request.server)
         if (!deleted) {
@@ -162,8 +163,8 @@ class ServerService(
         }
     }
 
-    override fun getServerById(request: ServerIdRequest, responseObserver: StreamObserver<ServerDefinition>) {
-        serverRepository.find(request.id).thenApply { server ->
+    override fun getServerById(request: GetServerByIdRequest, responseObserver: StreamObserver<ServerDefinition>) {
+        serverRepository.find(request.serverId).thenApply { server ->
             if (server == null) {
                 responseObserver.onError(
                     Status.NOT_FOUND
@@ -179,10 +180,10 @@ class ServerService(
     }
 
     override fun getServersByGroup(
-        request: GroupNameRequest,
+        request: GetServersByGroupRequest,
         responseObserver: StreamObserver<GetServersByGroupResponse>
     ) {
-        serverRepository.findServersByGroup(request.name).thenApply { servers ->
+        serverRepository.findServersByGroup(request.groupName).thenApply { servers ->
             val response = GetServersByGroupResponse.newBuilder()
                 .addAllServers(servers.map { it.toDefinition() })
                 .build()
@@ -193,10 +194,10 @@ class ServerService(
 
     override fun getServersByType(
         request: ServerTypeRequest,
-        responseObserver: StreamObserver<GetServersByGroupResponse>
+        responseObserver: StreamObserver<GetServersByTypeResponse>
     ) {
-        serverRepository.findServersByType(request.type).thenApply { servers ->
-            val response = GetServersByGroupResponse.newBuilder()
+        serverRepository.findServersByType(request.serverType).thenApply { servers ->
+            val response = GetServersByTypeResponse.newBuilder()
                 .addAllServers(servers.map { it.toDefinition() })
                 .build()
             responseObserver.onNext(response)
@@ -204,7 +205,7 @@ class ServerService(
         }
     }
 
-    override fun startServer(request: GroupNameRequest, responseObserver: StreamObserver<ServerDefinition>) {
+    override fun startServer(request: ControllerStartServerRequest, responseObserver: StreamObserver<ServerDefinition>) {
         hostRepository.find(serverRepository).thenApply { host ->
             if (host == null) {
                 responseObserver.onError(
@@ -214,7 +215,7 @@ class ServerService(
                 )
                 return@thenApply
             }
-            groupRepository.find(request.name).thenApply { group ->
+            groupRepository.find(request.groupName).thenApply { group ->
                 if (group == null) {
                     responseObserver.onError(
                         Status.NOT_FOUND
@@ -239,7 +240,7 @@ class ServerService(
             .withCallCredentials(authCallCredentials)
         serverRepository.save(server)
         return stub.startServer(
-            StartServerRequest.newBuilder()
+            ServerHostStartServerRequest.newBuilder()
                 .setGroup(group.toDefinition())
                 .setServer(server.toDefinition())
                 .build()
@@ -260,16 +261,16 @@ class ServerService(
         return Server.fromDefinition(
             ServerDefinition.newBuilder()
                 .setNumericalId(numericalId)
-                .setType(group.type)
+                .setServerType(group.type)
                 .setGroupName(group.name)
                 .setMinimumMemory(group.minMemory)
                 .setMaximumMemory(group.maxMemory)
-                .setState(ServerState.PREPARING)
+                .setServerState(ServerState.PREPARING)
                 .setMaxPlayers(group.maxPlayers)
-                .setCreatedAt(LocalDateTime.now().toString())
-                .setUpdatedAt(LocalDateTime.now().toString())
+                .setCreatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                .setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                 .setPlayerCount(0)
-                .setUniqueId(UUID.randomUUID().toString().replace("-", "")).putAllProperties(
+                .setUniqueId(UUID.randomUUID().toString().replace("-", "")).putAllCloudProperties(
                     mapOf(
                         *group.properties.entries.map { it.key to it.value }.toTypedArray(),
                         "forwarding-secret" to forwardingSecret,
@@ -278,8 +279,8 @@ class ServerService(
         )
     }
 
-    override fun stopServer(request: ServerIdRequest, responseObserver: StreamObserver<ServerDefinition>) {
-        serverRepository.find(request.id).thenApply { server ->
+    override fun stopServer(request: StopServerRequest, responseObserver: StreamObserver<ServerDefinition>) {
+        serverRepository.find(request.serverId).thenApply { server ->
             if (server == null) {
                 throw Status.NOT_FOUND
                     .withDescription("No server was found matching this id.")
@@ -314,16 +315,16 @@ class ServerService(
     }
 
     override fun updateServerProperty(
-        request: ServerUpdatePropertyRequest,
+        request: UpdateServerPropertyRequest,
         responseObserver: StreamObserver<ServerDefinition>
     ) {
-        serverRepository.find(request.id).thenApply { server ->
+        serverRepository.find(request.serverId).thenApply { server ->
             if (server == null) {
                 throw Status.NOT_FOUND
-                    .withDescription("Server with id ${request.id} does not exist.")
+                    .withDescription("Server with id ${request.serverId} does not exist.")
                     .asRuntimeException()
             }
-            server.properties[request.key] = request.value
+            server.properties[request.propertyKey] = request.propertyValue
             serverRepository.save(server)
             responseObserver.onNext(server.toDefinition())
             responseObserver.onCompleted()
@@ -333,16 +334,16 @@ class ServerService(
     }
 
     override fun updateServerState(
-        request: ServerUpdateStateRequest,
+        request: UpdateServerStateRequest,
         responseObserver: StreamObserver<ServerDefinition>
     ) {
-        serverRepository.find(request.id).thenApply { server ->
+        serverRepository.find(request.serverId).thenApply { server ->
             if (server == null) {
                 throw Status.NOT_FOUND
-                    .withDescription("Server with id ${request.id} does not exist.")
+                    .withDescription("Server with id ${request.serverState} does not exist.")
                     .asRuntimeException()
             }
-            server.state = request.state
+            server.state = request.serverState
             serverRepository.save(server)
             responseObserver.onNext(server.toDefinition())
             responseObserver.onCompleted()
