@@ -1,7 +1,6 @@
 package app.simplecloud.controller.runtime.server
 
 import app.simplecloud.controller.runtime.group.GroupRepository
-import app.simplecloud.controller.runtime.host.ServerHostException
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.future.toCompletable
@@ -9,6 +8,7 @@ import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.host.ServerHost
 import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.controller.shared.time.ProtoBufTimestamp
+import app.simplecloud.pubsub.PubSubClient
 import build.buf.gen.simplecloud.controller.v1.*
 import io.grpc.Context
 import io.grpc.Status
@@ -24,17 +24,21 @@ class ServerService(
     private val hostRepository: ServerHostRepository,
     private val groupRepository: GroupRepository,
     private val forwardingSecret: String,
-    private val authCallCredentials: AuthCallCredentials
+    private val authCallCredentials: AuthCallCredentials,
+    private val pubSubClient: PubSubClient,
 ) : ControllerServerServiceGrpc.ControllerServerServiceImplBase() {
 
     private val logger = LogManager.getLogger(ServerService::class.java)
 
-    override fun attachServerHost(request: AttachServerHostRequest, responseObserver: StreamObserver<ServerHostDefinition>) {
+    override fun attachServerHost(
+        request: AttachServerHostRequest,
+        responseObserver: StreamObserver<ServerHostDefinition>
+    ) {
         val serverHost = ServerHost.fromDefinition(request.serverHost)
         try {
             hostRepository.delete(serverHost)
             hostRepository.save(serverHost)
-        }catch (e: Exception) {
+        } catch (e: Exception) {
             responseObserver.onError(
                 Status.INTERNAL
                     .withDescription("Could not save serverhost")
@@ -125,9 +129,11 @@ class ServerService(
         val deleted = request.deleted
         val server = Server.fromDefinition(request.server)
         if (!deleted) {
+            val before: Server
             try {
+                before = serverRepository.find(server.uniqueId).resultNow()!!
                 serverRepository.save(server)
-            }catch (e: Exception) {
+            } catch (e: Exception) {
                 responseObserver.onError(
                     Status.INTERNAL
                         .withDescription("Could not update server")
@@ -136,12 +142,16 @@ class ServerService(
                 )
                 return
             }
+            pubSubClient.publish("event",
+                ServerUpdateEvent.newBuilder().setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setServerBefore(before.toDefinition()).setServerAfter(request.server).build()
+            )
             responseObserver.onNext(server.toDefinition())
             responseObserver.onCompleted()
         } else {
             logger.info("Deleting server ${server.uniqueId} of group ${request.server.groupName}...")
-            serverRepository.delete(server).thenApply thenDelete@ {
-                if(!it) {
+            serverRepository.delete(server).thenApply thenDelete@{
+                if (!it) {
                     responseObserver.onError(
                         Status.INTERNAL
                             .withDescription("Could not delete server")
@@ -150,6 +160,14 @@ class ServerService(
                     return@thenDelete
                 }
                 logger.info("Deleted server ${server.uniqueId} of group ${request.server.groupName}.")
+                pubSubClient.publish(
+                    "event", ServerStopEvent.newBuilder()
+                        .setServer(request.server)
+                        .setStoppedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                        .setStopCause(ServerStopCause.NATURAL_STOP)
+                        .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
+                        .build()
+                )
                 responseObserver.onNext(server.toDefinition())
                 responseObserver.onCompleted()
             }.exceptionally {
@@ -205,7 +223,10 @@ class ServerService(
         }
     }
 
-    override fun startServer(request: ControllerStartServerRequest, responseObserver: StreamObserver<ServerDefinition>) {
+    override fun startServer(
+        request: ControllerStartServerRequest,
+        responseObserver: StreamObserver<ServerDefinition>
+    ) {
         hostRepository.find(serverRepository).thenApply { host ->
             if (host == null) {
                 responseObserver.onError(
@@ -223,7 +244,15 @@ class ServerService(
                             .asRuntimeException()
                     )
                 } else {
-                    startServer(host, group)
+                    startServer(host, group).thenApply {
+                        pubSubClient.publish(
+                            "event", ServerStartEvent.newBuilder()
+                                .setServer(it)
+                                .setStartedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                                .setStartCause(request.startCause)
+                                .build()
+                        )
+                    }
                 }
             }.exceptionally {
                 logger.error("Error whilst starting server:", it)
@@ -287,6 +316,14 @@ class ServerService(
                     .asRuntimeException()
             }
             stopServer(server.toDefinition()).thenApply {
+                pubSubClient.publish(
+                    "event", ServerStopEvent.newBuilder()
+                        .setServer(it)
+                        .setStoppedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                        .setStopCause(request.stopCause)
+                        .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
+                        .build()
+                )
                 responseObserver.onNext(it)
                 responseObserver.onCompleted()
             }.get()
@@ -324,8 +361,14 @@ class ServerService(
                     .withDescription("Server with id ${request.serverId} does not exist.")
                     .asRuntimeException()
             }
+            val serverBefore = server.copy()
             server.properties[request.propertyKey] = request.propertyValue
             serverRepository.save(server)
+            pubSubClient.publish(
+                "event",
+                ServerUpdateEvent.newBuilder().setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setServerBefore(serverBefore.toDefinition()).setServerAfter(server.toDefinition()).build()
+            )
             responseObserver.onNext(server.toDefinition())
             responseObserver.onCompleted()
         }.exceptionally {
@@ -343,8 +386,14 @@ class ServerService(
                     .withDescription("Server with id ${request.serverState} does not exist.")
                     .asRuntimeException()
             }
+            val serverBefore = server.copy()
             server.state = request.serverState
             serverRepository.save(server)
+            pubSubClient.publish(
+                "event",
+                ServerUpdateEvent.newBuilder().setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setServerBefore(serverBefore.toDefinition()).setServerAfter(server.toDefinition()).build()
+            )
             responseObserver.onNext(server.toDefinition())
             responseObserver.onCompleted()
         }.exceptionally {

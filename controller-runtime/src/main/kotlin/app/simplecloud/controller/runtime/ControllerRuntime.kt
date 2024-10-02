@@ -11,6 +11,7 @@ import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.runtime.server.ServerService
 import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.auth.AuthSecretInterceptor
+import app.simplecloud.pubsub.PubSubClient
 import app.simplecloud.pubsub.PubSubService
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
@@ -32,6 +33,7 @@ class ControllerRuntime(
     private val numericalIdRepository = ServerNumericalIdRepository()
     private val serverRepository = ServerRepository(database, numericalIdRepository)
     private val hostRepository = ServerHostRepository()
+    private val pubSubService = PubSubService()
     private val reconciler = Reconciler(
         groupRepository,
         serverRepository,
@@ -45,8 +47,8 @@ class ControllerRuntime(
 
     fun start() {
         setupDatabase()
-        startGrpcServer()
         startPubSubGrpcServer()
+        startGrpcServer()
         startReconciler()
         loadGroups()
         loadServers()
@@ -109,7 +111,8 @@ class ControllerRuntime(
                     hostRepository,
                     groupRepository,
                     controllerStartCommand.forwardingSecret,
-                    authCallCredentials
+                    authCallCredentials,
+                    PubSubClient(controllerStartCommand.grpcHost, controllerStartCommand.pubSubGrpcPort, authCallCredentials)
                 )
             )
             .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret))
@@ -118,7 +121,7 @@ class ControllerRuntime(
 
     private fun createPubSubGrpcServer(): Server {
         return ServerBuilder.forPort(controllerStartCommand.pubSubGrpcPort)
-            .addService(PubSubService())
+            .addService(pubSubService)
             .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret))
             .build()
     }
