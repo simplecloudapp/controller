@@ -129,9 +129,14 @@ class ServerService(
         val deleted = request.deleted
         val server = Server.fromDefinition(request.server)
         if (!deleted) {
-            val before: Server
             try {
-                before = serverRepository.find(server.uniqueId).resultNow()!!
+                serverRepository.find(server.uniqueId).thenApply { before ->
+                    if(before == null) return@thenApply
+                    pubSubClient.publish("event",
+                        ServerUpdateEvent.newBuilder().setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                            .setServerBefore(before.toDefinition()).setServerAfter(request.server).build()
+                    )
+                }
                 serverRepository.save(server)
             } catch (e: Exception) {
                 responseObserver.onError(
@@ -142,10 +147,6 @@ class ServerService(
                 )
                 return
             }
-            pubSubClient.publish("event",
-                ServerUpdateEvent.newBuilder().setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
-                    .setServerBefore(before.toDefinition()).setServerAfter(request.server).build()
-            )
             responseObserver.onNext(server.toDefinition())
             responseObserver.onCompleted()
         } else {
