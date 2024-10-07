@@ -33,6 +33,17 @@ class ServerApiImpl(
         }
     }
 
+    override fun getServerByNumerical(groupName: String, numericalId: Long): CompletableFuture<Server> {
+        return serverServiceStub.getServerByNumerical(
+            GetServerByNumericalRequest.newBuilder()
+                .setGroupName(groupName)
+                .setNumericalId(numericalId)
+                .build()
+        ).toCompletable().thenApply {
+            Server.fromDefinition(it)
+        }
+    }
+
     override fun getServersByGroup(groupName: String): CompletableFuture<List<Server>> {
         return serverServiceStub.getServersByGroup(
             GetServersByGroupRequest.newBuilder()
