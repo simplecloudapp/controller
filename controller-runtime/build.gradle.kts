@@ -1,5 +1,3 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
 plugins {
     application
     alias(libs.plugins.jooqCodegen)
@@ -14,21 +12,6 @@ dependencies {
     implementation(rootProject.libs.bundles.log4j)
     implementation(rootProject.libs.clikt)
     implementation(rootProject.libs.spotifyCompletableFutures)
-}
-
-tasks.named("shadowJar", ShadowJar::class) {
-    dependencies {
-        include(dependency(rootProject.libs.kotlinCoroutines.get()))
-        include(dependency(rootProject.libs.qooq.get()))
-        include(dependency(rootProject.libs.qooqMeta.get()))
-        include(dependency(rootProject.libs.sqliteJdbc.get()))
-        include(dependency(rootProject.libs.clikt.get()))
-        include(dependency(rootProject.libs.spotifyCompletableFutures.get()))
-        include(dependency(rootProject.libs.log4jApi.get()))
-        include(dependency(rootProject.libs.log4jCore.get()))
-        include(dependency(rootProject.libs.log4jSlf4j.get()))
-    }
-    archiveFileName.set("${project.name}.jar")
 }
 
 application {
