@@ -28,6 +28,13 @@ interface ServerApi {
     fun getServersByGroup(groupName: String): CompletableFuture<List<Server>>
 
     /**
+     * @param groupName the name of the server group.
+     * @param numericalId the numerical id of the server.
+     * @return a [CompletableFuture] with the [Server].
+     */
+    fun getServerByNumerical(groupName: String, numericalId: Long): CompletableFuture<Server>
+
+    /**
      * @param group The server group.
      * @return a [CompletableFuture] with a [List] of [Server]s of that group.
      */
