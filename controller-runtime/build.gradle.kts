@@ -40,6 +40,7 @@ tasks.named("compileKotlin") {
 jooq {
     configuration {
         generator {
+            name = "org.jooq.codegen.KotlinGenerator"
             target {
                 directory = "build/generated/source/db/main/java"
                 packageName = "app.simplecloud.controller.shared.db"
