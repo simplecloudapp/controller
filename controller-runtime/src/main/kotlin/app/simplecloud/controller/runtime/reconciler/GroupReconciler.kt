@@ -80,7 +80,7 @@ class GroupReconciler(
             }
     }
 
-    private fun cleanupNumericalIds() {
+    private suspend fun cleanupNumericalIds() {
         val usedNumericalIds = this.servers.map { it.numericalId }
         val numericalIds = this.numericalIdRepository.findNumericalIds(this.group.name)
 

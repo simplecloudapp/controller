@@ -19,7 +19,6 @@ class ServerRepository(
     private val numericalIdRepository: ServerNumericalIdRepository
 ) : LoadableRepository<Server, String> {
 
-
     override suspend fun find(identifier: String): Server? {
         val query = withContext(Dispatchers.IO) {
             database.context.select()
