@@ -1,4 +1,4 @@
-package app.simplecloud.controller.api.impl
+package app.simplecloud.controller.api.impl.future
 
 import app.simplecloud.controller.api.ServerApi
 import app.simplecloud.controller.shared.auth.AuthCallCredentials
@@ -9,10 +9,10 @@ import app.simplecloud.controller.shared.server.Server
 import io.grpc.ManagedChannel
 import java.util.concurrent.CompletableFuture
 
-class ServerApiImpl(
+class ServerApiFutureImpl(
     managedChannel: ManagedChannel,
     authCallCredentials: AuthCallCredentials
-) : ServerApi {
+) : ServerApi.Future {
 
     private val serverServiceStub: ControllerServerServiceGrpc.ControllerServerServiceFutureStub =
         ControllerServerServiceGrpc.newFutureStub(managedChannel).withCallCredentials(authCallCredentials)

@@ -1,4 +1,4 @@
-package app.simplecloud.controller.api.impl
+package app.simplecloud.controller.api.impl.future
 
 import app.simplecloud.controller.api.GroupApi
 import app.simplecloud.controller.shared.auth.AuthCallCredentials
@@ -15,10 +15,10 @@ import build.buf.gen.simplecloud.controller.v1.UpdateGroupRequest
 import io.grpc.ManagedChannel
 import java.util.concurrent.CompletableFuture
 
-class GroupApiImpl(
+class GroupApiFutureImpl(
     managedChannel: ManagedChannel,
     authCallCredentials: AuthCallCredentials
-) : GroupApi {
+) : GroupApi.Future {
 
     private val groupServiceStub: ControllerGroupServiceGrpc.ControllerGroupServiceFutureStub =
         ControllerGroupServiceGrpc.newFutureStub(managedChannel)

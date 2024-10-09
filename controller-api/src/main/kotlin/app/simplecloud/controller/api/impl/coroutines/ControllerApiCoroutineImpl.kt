@@ -1,4 +1,4 @@
-package app.simplecloud.controller.api.impl
+package app.simplecloud.controller.api.impl.coroutines
 
 import app.simplecloud.controller.api.ControllerApi
 import app.simplecloud.controller.api.GroupApi
@@ -8,15 +8,15 @@ import app.simplecloud.pubsub.PubSubClient
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 
-class ControllerApiImpl(
+class ControllerApiCoroutineImpl(
     authSecret: String
-): ControllerApi {
+): ControllerApi.Coroutine {
 
     private val authCallCredentials = AuthCallCredentials(authSecret)
 
     private val managedChannel = createManagedChannelFromEnv()
-    private val groups: GroupApi = GroupApiImpl(managedChannel, authCallCredentials)
-    private val servers: ServerApi = ServerApiImpl(managedChannel, authCallCredentials)
+    private val groups: GroupApi.Coroutine = GroupApiCoroutineImpl(managedChannel, authCallCredentials)
+    private val servers: ServerApi.Coroutine = ServerApiCoroutineImpl(managedChannel, authCallCredentials)
 
 
     private val pubSubClient = PubSubClient(
@@ -26,16 +26,16 @@ class ControllerApiImpl(
     )
 
     /**
-     * @return The controllers [GroupApi]
+     * @return The controllers [GroupApi.Coroutine]
      */
-    override fun getGroups(): GroupApi {
+    override fun getGroups(): GroupApi.Coroutine {
         return groups
     }
 
     /**
-     * @return The controllers [ServerApi]
+     * @return The controllers [ServerApi.Coroutine]
      */
-    override fun getServers(): ServerApi {
+    override fun getServers(): ServerApi.Coroutine {
         return servers
     }
 
@@ -51,6 +51,5 @@ class ControllerApiImpl(
         val port = System.getenv("CONTROLLER_PORT")?.toInt() ?: 5816
         return ManagedChannelBuilder.forAddress(host, port).usePlaintext().build()
     }
-
-
+    
 }
