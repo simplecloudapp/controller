@@ -3,130 +3,64 @@ package app.simplecloud.controller.runtime.group
 import app.simplecloud.controller.shared.group.Group
 import build.buf.gen.simplecloud.controller.v1.*
 import io.grpc.Status
-import io.grpc.stub.StreamObserver
+import io.grpc.StatusException
 
 class GroupService(
     private val groupRepository: GroupRepository
-) : ControllerGroupServiceGrpc.ControllerGroupServiceImplBase() {
+) : ControllerGroupServiceGrpcKt.ControllerGroupServiceCoroutineImplBase() {
 
-    override fun getGroupByName(
-        request: GetGroupByNameRequest,
-        responseObserver: StreamObserver<GetGroupByNameResponse>
-    ) {
-        groupRepository.find(request.groupName).thenApply { group ->
-            if (group == null) {
-                responseObserver.onError(
-                    Status.NOT_FOUND
-                        .withDescription("This group does not exist")
-                        .asRuntimeException()
-                )
-                return@thenApply
-            }
-
-            val response = GetGroupByNameResponse.newBuilder()
-                .setGroup(group.toDefinition())
-                .build()
-
-            responseObserver.onNext(response)
-            responseObserver.onCompleted()
-        }
-
+    override suspend fun getGroupByName(request: GetGroupByNameRequest): GetGroupByNameResponse {
+        val group = groupRepository.find(request.groupName)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("This group does not exist"))
+        return getGroupByNameResponse { group.toDefinition() }
     }
 
-    override fun getAllGroups(request: GetAllGroupsRequest, responseObserver: StreamObserver<GetAllGroupsResponse>) {
-        groupRepository.getAll().thenApply { groups ->
-            val response = GetAllGroupsResponse.newBuilder()
-                .addAllGroups(groups.map { it.toDefinition() })
-                .build()
-            responseObserver.onNext(response)
-            responseObserver.onCompleted()
+    override suspend fun getAllGroups(request: GetAllGroupsRequest): GetAllGroupsResponse {
+        val allGroups = groupRepository.getAll()
+        return getAllGroupsResponse {
+            groups.addAll(allGroups.map { it.toDefinition() })
         }
-
     }
 
-    override fun getGroupsByType(
-        request: GetGroupsByTypeRequest,
-        responseObserver: StreamObserver<GetGroupsByTypeResponse>
-    ) {
+    override suspend fun getGroupsByType(request: GetGroupsByTypeRequest): GetGroupsByTypeResponse {
         val type = request.serverType
-        groupRepository.getAll().thenApply { groups ->
-            val response = GetGroupsByTypeResponse.newBuilder()
-                .addAllGroups(groups.filter { it.type == type }.map { it.toDefinition() })
-                .build()
-            responseObserver.onNext(response)
-            responseObserver.onCompleted()
+        val typedGroups = groupRepository.getAll().filter { it.type == type }
+        return getGroupsByTypeResponse {
+            groups.addAll(typedGroups.map { it.toDefinition() })
         }
-
     }
 
-    override fun updateGroup(request: UpdateGroupRequest, responseObserver: StreamObserver<GroupDefinition>) {
+    override suspend fun updateGroup(request: UpdateGroupRequest): GroupDefinition {
+        groupRepository.find(request.group.name)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("This group does not exist"))
         val group = Group.fromDefinition(request.group)
         try {
             groupRepository.save(group)
         } catch (e: Exception) {
-            responseObserver.onError(
-                Status.INTERNAL
-                    .withDescription("Error whilst updating group")
-                    .withCause(e)
-                    .asRuntimeException()
-            )
-            return
+            throw StatusException(Status.INTERNAL.withDescription("Error whilst updating group").withCause(e))
         }
-
-        responseObserver.onNext(group.toDefinition())
-        responseObserver.onCompleted()
+        return group.toDefinition()
     }
 
-    override fun createGroup(request: CreateGroupRequest, responseObserver: StreamObserver<GroupDefinition>) {
+    override suspend fun createGroup(request: CreateGroupRequest): GroupDefinition {
+        if (groupRepository.find(request.group.name) != null) {
+            throw StatusException(Status.NOT_FOUND.withDescription("This group already exists"))
+        }
         val group = Group.fromDefinition(request.group)
         try {
             groupRepository.save(group)
         } catch (e: Exception) {
-            responseObserver.onError(
-                Status.INTERNAL
-                    .withDescription("Error whilst creating group")
-                    .withCause(e)
-                    .asRuntimeException()
-            )
-            return
+            throw StatusException(Status.INTERNAL.withDescription("Error whilst creating group").withCause(e))
         }
-
-        responseObserver.onNext(group.toDefinition())
-        responseObserver.onCompleted()
+        return group.toDefinition()
     }
 
-    override fun deleteGroupByName(request: DeleteGroupByNameRequest, responseObserver: StreamObserver<GroupDefinition>) {
-        groupRepository.find(request.groupName).thenApply { group ->
-            if (group == null) {
-                responseObserver.onError(
-                    Status.NOT_FOUND
-                        .withDescription("This group does not exist")
-                        .asRuntimeException()
-                )
-                return@thenApply
-            }
-            groupRepository.delete(group).thenApply thenDelete@ { successfullyDeleted ->
-                if(!successfullyDeleted) {
-                    responseObserver.onError(
-                        Status.INTERNAL
-                            .withDescription("Could not delete group")
-                            .asRuntimeException()
-                    )
-
-                    return@thenDelete
-                }
-                responseObserver.onNext(group.toDefinition())
-                responseObserver.onCompleted()
-            }.exceptionally {
-                responseObserver.onError(
-                    Status.INTERNAL
-                        .withDescription("Could not delete group")
-                        .withCause(it)
-                        .asRuntimeException()
-                )
-            }
-        }
-
+    override suspend fun deleteGroupByName(request: DeleteGroupByNameRequest): GroupDefinition {
+        val group = groupRepository.find(request.groupName)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("This group does not exist"))
+        val deleted = groupRepository.delete(group)
+        if (!deleted) throw StatusException(Status.NOT_FOUND.withDescription("Could not delete this group"))
+        return group.toDefinition()
     }
 
 }

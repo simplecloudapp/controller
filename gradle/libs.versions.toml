@@ -1,13 +1,13 @@
 [versions]
 kotlin = "2.0.20"
-kotlinCoroutines = "1.4.2"
-shadow = "8.1.1"
+kotlinCoroutines = "1.9.0"
+shadow = "8.3.3"
 log4j = "2.20.0"
 protobuf = "3.25.2"
 grpc = "1.61.0"
 grpcKotlin = "1.4.1"
 simpleCloudProtoSpecs = "1.4.1.1.20241001163139.58018cb317ed"
-simpleCloudPubSub = "1.0.4"
+simpleCloudPubSub = "1.0.5"
 jooq = "3.19.3"
 configurate = "4.1.2"
 sqliteJdbc = "3.44.1.0"
@@ -59,7 +59,7 @@ proto = [
     "grpcKotlinStub",
     "grpcProtobuf",
     "grpcNettyShaded",
-    "simpleCloudProtoSpecs"
+    "simpleCloudProtoSpecs",
 ]
 jooq = [
     "qooq",
@@ -72,6 +72,6 @@ configurate = [
 
 [plugins]
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 jooqCodegen = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }
 sonatypeCentralPortalPublisher = { id = "net.thebugmc.gradle.sonatype-central-portal-publisher", version.ref = "sonatypeCentralPortalPublisher" }

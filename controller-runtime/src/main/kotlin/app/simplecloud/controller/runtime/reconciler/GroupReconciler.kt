@@ -8,6 +8,7 @@ import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.server.Server
 import build.buf.gen.simplecloud.controller.v1.*
 import build.buf.gen.simplecloud.controller.v1.ControllerServerServiceGrpc.ControllerServerServiceFutureStub
+import kotlinx.coroutines.runBlocking
 import org.apache.logging.log4j.LogManager
 import java.time.LocalDateTime
 import kotlin.math.min
@@ -21,11 +22,11 @@ class GroupReconciler(
 ) {
 
     private val logger = LogManager.getLogger(GroupReconciler::class.java)
-    private val servers = this.serverRepository.findServersByGroup(this.group.name).get()
+    private val servers = runBlocking { serverRepository.findServersByGroup(group.name) }
 
     private val availableServerCount = calculateAvailableServerCount()
 
-    fun reconcile() {
+    suspend fun reconcile() {
         cleanupServers()
         cleanupNumericalIds()
         startServers()
@@ -96,17 +97,19 @@ class GroupReconciler(
         return server.updatedAt.isAfter(LocalDateTime.now().minusMinutes(INACTIVE_SERVER_TIME))
     }
 
-    private fun startServers() {
-        serverHostRepository.areServerHostsAvailable().thenApply {
-            if (!it) return@thenApply
-            if (isNewServerNeeded())
-                startServer()
-        }
+    private suspend fun startServers() {
+        val available = serverHostRepository.areServerHostsAvailable()
+        if(!available) return
+        if(isNewServerNeeded())
+            startServer()
     }
 
     private fun startServer() {
         logger.info("Starting new instance of group ${this.group.name}")
-        serverStub.startServer(ControllerStartServerRequest.newBuilder().setGroupName(this.group.name).setStartCause(ServerStartCause.RECONCILER_START).build()).toCompletable()
+        serverStub.startServer(
+            ControllerStartServerRequest.newBuilder().setGroupName(this.group.name)
+                .setStartCause(ServerStartCause.RECONCILER_START).build()
+        ).toCompletable()
             .thenApply {
                 logger.info("Started new instance ${it.groupName}-${it.numericalId}/${it.uniqueId} of group ${this.group.name} on ${it.serverIp}:${it.serverPort}")
             }.exceptionally {

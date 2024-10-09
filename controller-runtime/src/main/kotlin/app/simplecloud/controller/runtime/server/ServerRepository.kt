@@ -8,9 +8,11 @@ import app.simplecloud.controller.shared.db.tables.records.CloudServersRecord
 import app.simplecloud.controller.shared.server.Server
 import build.buf.gen.simplecloud.controller.v1.ServerState
 import build.buf.gen.simplecloud.controller.v1.ServerType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jooq.Result
+import org.jooq.exception.DataAccessException
 import java.time.LocalDateTime
-import java.util.concurrent.CompletableFuture
 
 class ServerRepository(
     private val database: Database,
@@ -18,73 +20,75 @@ class ServerRepository(
 ) : LoadableRepository<Server, String> {
 
 
-    override fun find(identifier: String): CompletableFuture<Server?> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select()
+    override suspend fun find(identifier: String): Server? {
+        val query = withContext(Dispatchers.IO) {
+            database.context.select()
                 .from(CLOUD_SERVERS)
                 .where(CLOUD_SERVERS.UNIQUE_ID.eq(identifier))
+                .limit(1)
                 .fetchInto(
                     CLOUD_SERVERS
                 )
-            return@supplyAsync toList(query).firstOrNull()
         }
+        return toList(query).firstOrNull()
     }
 
 
-    fun findServerByNumerical(group: String, id: Int): CompletableFuture<Server?> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select().from(CLOUD_SERVERS)
+    suspend fun findServerByNumerical(group: String, id: Int): Server? {
+        val query = withContext(Dispatchers.IO) {
+            database.context.select().from(CLOUD_SERVERS)
                 .where(
                     CLOUD_SERVERS.GROUP_NAME.eq(group)
                         .and(CLOUD_SERVERS.NUMERICAL_ID.eq(id))
                 )
+                .limit(1)
                 .fetchInto(CLOUD_SERVERS)
-            return@supplyAsync toList(query).firstOrNull()
         }
+        return toList(query).firstOrNull()
     }
 
-    override fun getAll(): CompletableFuture<List<Server>> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select()
+    override suspend fun getAll(): List<Server> {
+        val query = withContext(Dispatchers.IO) {
+            database.context.select()
                 .from(CLOUD_SERVERS)
                 .fetchInto(CLOUD_SERVERS)
-            return@supplyAsync toList(query)
         }
+        return toList(query)
+
     }
 
-    fun findServersByHostId(id: String): CompletableFuture<List<Server>> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select()
+    suspend fun findServersByHostId(id: String): List<Server> {
+        val query = withContext(Dispatchers.IO) {
+            database.context.select()
                 .from(CLOUD_SERVERS)
                 .where(CLOUD_SERVERS.HOST_ID.eq(id))
                 .fetchInto(
                     CLOUD_SERVERS
                 )
-            return@supplyAsync toList(query)
         }
+        return toList(query)
     }
 
-    fun findServersByGroup(group: String): CompletableFuture<List<Server>> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select()
+    suspend fun findServersByGroup(group: String): List<Server> {
+        val query = withContext(Dispatchers.IO) {
+            database.context.select()
                 .from(CLOUD_SERVERS)
                 .where(CLOUD_SERVERS.GROUP_NAME.eq(group))
                 .fetchInto(
                     CLOUD_SERVERS
                 )
-            return@supplyAsync toList(query)
         }
-
+        return toList(query)
     }
 
-    fun findServersByType(type: ServerType): CompletableFuture<List<Server>> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select()
+    suspend fun findServersByType(type: ServerType): List<Server> {
+        val query = withContext(Dispatchers.IO) {
+            database.context.select()
                 .from(CLOUD_SERVERS)
                 .where(CLOUD_SERVERS.TYPE.eq(type.toString()))
                 .fetchInto(CLOUD_SERVERS)
-            return@supplyAsync toList(query)
         }
+        return toList(query)
     }
 
     private fun toList(query: Result<CloudServersRecord>): List<Server> {
@@ -120,27 +124,25 @@ class ServerRepository(
         return result
     }
 
-    override fun delete(element: Server): CompletableFuture<Boolean> {
+    override suspend fun delete(element: Server): Boolean {
         val canDelete =
-            database.context.deleteFrom(CLOUD_SERVER_PROPERTIES)
-                .where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(element.uniqueId))
-                .executeAsync().toCompletableFuture().thenApply {
-                    return@thenApply true
-                }.exceptionally {
-                    it.printStackTrace()
-                    return@exceptionally false
-                }.get()
-        if (!canDelete) return CompletableFuture.completedFuture(false)
-        numericalIdRepository.removeNumericalId(element.group, element.numericalId)
-        return database.context.deleteFrom(CLOUD_SERVERS)
-            .where(CLOUD_SERVERS.UNIQUE_ID.eq(element.uniqueId))
-            .executeAsync()
-            .toCompletableFuture().thenApply {
-                return@thenApply it > 0
-            }.exceptionally {
-                it.printStackTrace()
-                return@exceptionally false
+            withContext(Dispatchers.IO) {
+                try {
+                    database.context.deleteFrom(CLOUD_SERVER_PROPERTIES)
+                        .where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(element.uniqueId))
+                        .execute()
+                    return@withContext true
+                } catch (e: DataAccessException) {
+                    return@withContext false
+                }
             }
+        if (!canDelete) return false
+        numericalIdRepository.removeNumericalId(element.group, element.numericalId)
+        return withContext(Dispatchers.IO) {
+            database.context.deleteFrom(CLOUD_SERVERS)
+                .where(CLOUD_SERVERS.UNIQUE_ID.eq(element.uniqueId))
+                .execute() > 0
+        }
     }
 
     @Synchronized

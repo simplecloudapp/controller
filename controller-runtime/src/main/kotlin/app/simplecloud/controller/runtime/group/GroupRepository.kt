@@ -12,15 +12,15 @@ class GroupRepository(
         return "$identifier.yml"
     }
 
-    override fun find(identifier: String): CompletableFuture<Group?> {
-        return CompletableFuture.completedFuture(entities.values.find { it.name == identifier })
+    override suspend fun find(identifier: String): Group? {
+        return entities.values.find { it.name == identifier }
     }
 
     override fun save(element: Group) {
         save(getFileName(element.name), element)
     }
 
-    override fun getAll(): CompletableFuture<List<Group>> {
-        return CompletableFuture.completedFuture(entities.values.toList())
+    override suspend fun getAll(): List<Group> {
+        return entities.values.toList()
     }
 }
