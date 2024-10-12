@@ -34,9 +34,10 @@ grpcNettyShaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 simpleCloudProtoSpecs = { module = "build.buf.gen:simplecloud_proto-specs_grpc_kotlin", version.ref = "simpleCloudProtoSpecs" }
 simpleCloudPubSub = { module = "app.simplecloud:simplecloud-pubsub", version.ref = "simpleCloudPubSub" }
 
-qooq = { module = "org.jooq:jooq", version.ref = "jooq" }
+qooq = { module = "org.jooq:jooq-kotlin", version.ref = "jooq" }
 qooqMeta = { module = "org.jooq:jooq-meta", version.ref = "jooq" }
 jooqMetaExtensions = { module = "org.jooq:jooq-meta-extensions", version.ref = "jooq" }
+jooqKotlinCoroutines = { module = "org.jooq:jooq-kotlin-coroutines", version.ref = "jooq" }
 
 configurateYaml = { module = "org.spongepowered:configurate-yaml", version.ref = "configurate" }
 configurateExtraKotlin = { module = "org.spongepowered:configurate-extra-kotlin", version.ref = "configurate" }
@@ -63,7 +64,8 @@ proto = [
 ]
 jooq = [
     "qooq",
-    "qooqMeta"
+    "qooqMeta",
+    "jooqKotlinCoroutines"
 ]
 configurate = [
     "configurateYaml",
