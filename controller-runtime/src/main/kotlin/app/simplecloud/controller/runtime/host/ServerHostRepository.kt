@@ -4,8 +4,10 @@ import app.simplecloud.controller.runtime.Repository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.shared.host.ServerHost
 import io.grpc.ConnectivityState
+import io.grpc.ManagedChannel
 import kotlinx.coroutines.coroutineScope
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 class ServerHostRepository : Repository<ServerHost, ServerRepository> {
 
@@ -26,15 +28,16 @@ class ServerHostRepository : Repository<ServerHost, ServerRepository> {
     suspend fun areServerHostsAvailable(): Boolean {
         return coroutineScope {
             return@coroutineScope hosts.any {
-                val channel = it.value.createChannel()
+                val channel = it.value.stub.channel as ManagedChannel
                 val state = channel.getState(true)
-                channel.shutdown()
                 state == ConnectivityState.IDLE || state == ConnectivityState.READY
             }
         }
     }
 
     override suspend fun delete(element: ServerHost): Boolean {
+        val host = hosts.get(element.id) ?: return false
+        (host.stub.channel as ManagedChannel).shutdown().awaitTermination(5L, TimeUnit.SECONDS)
         return hosts.remove(element.id, element)
     }
 

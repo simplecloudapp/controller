@@ -1,6 +1,8 @@
 package app.simplecloud.controller.shared.host
 
+import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import build.buf.gen.simplecloud.controller.v1.ServerHostDefinition
+import build.buf.gen.simplecloud.controller.v1.ServerHostServiceGrpcKt
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import org.spongepowered.configurate.objectmapping.ConfigSerializable
@@ -9,7 +11,8 @@ import org.spongepowered.configurate.objectmapping.ConfigSerializable
 data class ServerHost(
     val id: String,
     val host: String,
-    val port: Int
+    val port: Int,
+    val stub: ServerHostServiceGrpcKt.ServerHostServiceCoroutineStub,
 ) {
 
     fun toDefinition(): ServerHostDefinition {
@@ -22,18 +25,23 @@ data class ServerHost(
 
     companion object {
         @JvmStatic
-        fun fromDefinition(serverHostDefinition: ServerHostDefinition): ServerHost {
+        fun fromDefinition(serverHostDefinition: ServerHostDefinition, credentials: AuthCallCredentials): ServerHost {
             return ServerHost(
                 serverHostDefinition.hostId,
                 serverHostDefinition.hostHost,
-                serverHostDefinition.hostPort
+                serverHostDefinition.hostPort,
+                ServerHostServiceGrpcKt.ServerHostServiceCoroutineStub(
+                    createChannel(
+                        serverHostDefinition.hostHost,
+                        serverHostDefinition.hostPort
+                    )
+                ).withCallCredentials(credentials),
             )
         }
+
+        @JvmStatic
+        fun createChannel(host: String, port: Int): ManagedChannel {
+            return ManagedChannelBuilder.forAddress(host, port).usePlaintext().build()
+        }
     }
-
-
-    fun createChannel(): ManagedChannel {
-        return ManagedChannelBuilder.forAddress(host, port).usePlaintext().build()
-    }
-
 }

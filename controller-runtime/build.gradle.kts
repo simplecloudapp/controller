@@ -5,7 +5,6 @@ plugins {
 
 dependencies {
     api(project(":controller-shared"))
-    api(rootProject.libs.kotlinCoroutines)
     api(rootProject.libs.bundles.jooq)
     api(rootProject.libs.sqliteJdbc)
     jooqCodegen(rootProject.libs.jooqMetaExtensions)

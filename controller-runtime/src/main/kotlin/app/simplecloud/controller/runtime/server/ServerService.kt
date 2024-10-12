@@ -29,7 +29,7 @@ class ServerService(
     private val logger = LogManager.getLogger(ServerService::class.java)
 
     override suspend fun attachServerHost(request: AttachServerHostRequest): ServerHostDefinition {
-        val serverHost = ServerHost.fromDefinition(request.serverHost)
+        val serverHost = ServerHost.fromDefinition(request.serverHost, authCallCredentials)
         try {
             hostRepository.delete(serverHost)
             hostRepository.save(serverHost)
@@ -39,13 +39,10 @@ class ServerService(
         logger.info("Successfully registered ServerHost ${serverHost.id}.")
 
         coroutineScope {
-            val channel = serverHost.createChannel()
-            val stub =
-                ServerHostServiceGrpcKt.ServerHostServiceCoroutineStub(channel).withCallCredentials(authCallCredentials)
             serverRepository.findServersByHostId(serverHost.id).forEach { server ->
                 logger.info("Reattaching Server ${server.uniqueId} of group ${server.group}...")
                 try {
-                    val result = stub.reattachServer(server.toDefinition())
+                    val result = serverHost.stub.reattachServer(server.toDefinition())
                     serverRepository.save(Server.fromDefinition(result))
                     logger.info("Success!")
                 } catch (e: Exception) {
@@ -53,7 +50,6 @@ class ServerService(
                     serverRepository.delete(server)
                 }
             }
-            channel.shutdown()
         }
         return serverHost.toDefinition()
     }
@@ -73,7 +69,7 @@ class ServerService(
         val server = serverRepository.findServerByNumerical(request.groupName, request.numericalId.toInt())
             ?: throw StatusException(Status.NOT_FOUND.withDescription("No server was found matching this group and numerical id"))
         try {
-            return stopServer(server.toDefinition())
+            return stopServer(server.toDefinition(), request.stopCause)
         } catch (e: Exception) {
             throw StatusException(
                 Status.INTERNAL.withDescription("Error occured whilest cleaning up stopped server: ").withCause(e)
@@ -167,9 +163,7 @@ class ServerService(
         val numericalId = numericalIdRepository.findNextNumericalId(group.name)
         val server = buildServer(group, numericalId, forwardingSecret)
         serverRepository.save(server)
-        val channel = host.createChannel()
-        val stub = ServerHostServiceGrpcKt.ServerHostServiceCoroutineStub(channel)
-            .withCallCredentials(authCallCredentials)
+        val stub = host.stub
         serverRepository.save(server)
         try {
             val result = stub.startServer(
@@ -179,12 +173,10 @@ class ServerService(
                     .build()
             )
             serverRepository.save(Server.fromDefinition(result))
-            channel.shutdown()
             return result
         } catch (e: Exception) {
             serverRepository.delete(server)
             numericalIdRepository.removeNumericalId(group.name, server.numericalId)
-            channel.shutdown()
             logger.error("Error whilst starting server:", e)
             throw e
         }
@@ -206,7 +198,7 @@ class ServerService(
                 .setUniqueId(UUID.randomUUID().toString().replace("-", "")).putAllCloudProperties(
                     mapOf(
                         *group.properties.entries.map { it.key to it.value }.toTypedArray(),
-                        "forwarding-secret" to forwardingSecret,
+                        "forwarding-secret" to forwardingSecret
                     )
                 ).build()
         )
@@ -216,32 +208,30 @@ class ServerService(
         val server = serverRepository.find(request.serverId)
             ?: throw StatusException(Status.NOT_FOUND.withDescription("No server was found matching this id."))
         try {
-            val stopped = stopServer(server.toDefinition())
-            pubSubClient.publish(
-                "event", ServerStopEvent.newBuilder()
-                    .setServer(stopped)
-                    .setStoppedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
-                    .setStopCause(request.stopCause)
-                    .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
-                    .build()
-            )
+            val stopped = stopServer(server.toDefinition(), request.stopCause)
             return stopped
         } catch (e: Exception) {
             throw StatusException(Status.INTERNAL.withDescription("Error whilst stopping server").withCause(e))
         }
     }
 
-    private suspend fun stopServer(server: ServerDefinition): ServerDefinition {
+    private suspend fun stopServer(server: ServerDefinition, cause: ServerStopCause = ServerStopCause.NATURAL_STOP): ServerDefinition {
         val host = hostRepository.findServerHostById(server.hostId)
             ?: throw Status.NOT_FOUND
                 .withDescription("No server host was found matching this server.")
                 .asRuntimeException()
-        val channel = host.createChannel()
-        val stub = ServerHostServiceGrpcKt.ServerHostServiceCoroutineStub(channel)
-            .withCallCredentials(authCallCredentials)
+        val stub = host.stub
         try {
             val stopped = stub.stopServer(server)
-            channel.shutdown()
+            pubSubClient.publish(
+                "event", ServerStopEvent.newBuilder()
+                    .setServer(stopped)
+                    .setStoppedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setStopCause(cause)
+                    .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
+                    .build()
+            )
+            serverRepository.delete(Server.fromDefinition(stopped))
             return stopped
         } catch (e: Exception) {
             logger.error("Server stop error occured:", e)
