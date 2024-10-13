@@ -1,21 +1,20 @@
 package app.simplecloud.controller.runtime.server
 
 import app.simplecloud.controller.runtime.group.GroupRepository
-import app.simplecloud.controller.runtime.host.ServerHostException
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.shared.auth.AuthCallCredentials
-import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.host.ServerHost
 import app.simplecloud.controller.shared.server.Server
+import app.simplecloud.controller.shared.time.ProtoBufTimestamp
+import app.simplecloud.pubsub.PubSubClient
 import build.buf.gen.simplecloud.controller.v1.*
-import io.grpc.Context
 import io.grpc.Status
-import io.grpc.stub.StreamObserver
+import io.grpc.StatusException
+import kotlinx.coroutines.coroutineScope
 import org.apache.logging.log4j.LogManager
 import java.time.LocalDateTime
 import java.util.*
-import java.util.concurrent.CompletableFuture
 
 class ServerService(
     private val numericalIdRepository: ServerNumericalIdRepository,
@@ -23,233 +22,163 @@ class ServerService(
     private val hostRepository: ServerHostRepository,
     private val groupRepository: GroupRepository,
     private val forwardingSecret: String,
-    private val authCallCredentials: AuthCallCredentials
-) : ControllerServerServiceGrpc.ControllerServerServiceImplBase() {
+    private val authCallCredentials: AuthCallCredentials,
+    private val pubSubClient: PubSubClient,
+) : ControllerServerServiceGrpcKt.ControllerServerServiceCoroutineImplBase() {
 
     private val logger = LogManager.getLogger(ServerService::class.java)
 
-    override fun attachServerHost(request: ServerHostDefinition, responseObserver: StreamObserver<ServerHostDefinition>) {
-        val serverHost = ServerHost.fromDefinition(request)
+    override suspend fun attachServerHost(request: AttachServerHostRequest): ServerHostDefinition {
+        val serverHost = ServerHost.fromDefinition(request.serverHost, authCallCredentials)
         try {
             hostRepository.delete(serverHost)
             hostRepository.save(serverHost)
-        }catch (e: Exception) {
-            responseObserver.onError(
-                Status.INTERNAL
-                    .withDescription("Could not save serverhost")
-                    .withCause(e)
-                    .asRuntimeException()
-            )
-            return
+        } catch (e: Exception) {
+            throw StatusException(Status.INTERNAL.withDescription("Could not save serverhost").withCause(e))
         }
         logger.info("Successfully registered ServerHost ${serverHost.id}.")
-        responseObserver.onNext(serverHost.toDefinition())
-        responseObserver.onCompleted()
-        Context.current().fork().run {
-            val channel = serverHost.createChannel()
-            val stub = ServerHostServiceGrpc.newFutureStub(channel)
-                .withCallCredentials(authCallCredentials)
-            serverRepository.findServersByHostId(serverHost.id).thenApply {
-                it.forEach { server ->
-                    logger.info("Reattaching Server ${server.uniqueId} of group ${server.group}...")
-                    stub.reattachServer(server.toDefinition()).toCompletable().thenApply {
-                        logger.info("Success!")
-                    }.exceptionally {
-                        logger.error("Server was found to be offline, unregistering...")
-                        serverRepository.delete(server)
-                    }.get()
+
+        coroutineScope {
+            serverRepository.findServersByHostId(serverHost.id).forEach { server ->
+                logger.info("Reattaching Server ${server.uniqueId} of group ${server.group}...")
+                try {
+                    val result = serverHost.stub.reattachServer(server.toDefinition())
+                    serverRepository.save(Server.fromDefinition(result))
+                    logger.info("Success!")
+                } catch (e: Exception) {
+                    logger.error("Server was found to be offline, unregistering...")
+                    serverRepository.delete(server)
                 }
-                channel.shutdown()
             }
         }
+        return serverHost.toDefinition()
     }
 
-    override fun getAllServers(
-        request: GetAllServersRequest,
-        responseObserver: StreamObserver<GetAllServersResponse>
-    ) {
-        serverRepository.getAll().thenApply { servers ->
-            responseObserver.onNext(
-                GetAllServersResponse.newBuilder()
-                    .addAllServers(servers.map { it.toDefinition() })
-                    .build()
+    override suspend fun getAllServers(request: GetAllServersRequest): GetAllServersResponse {
+        val currentServers = serverRepository.getAll()
+        return getAllServersResponse { servers.addAll(currentServers.map { it.toDefinition() }) }
+    }
+
+    override suspend fun getServerByNumerical(request: GetServerByNumericalRequest): ServerDefinition {
+        val server = serverRepository.findServerByNumerical(request.groupName, request.numericalId.toInt())
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("No server was found matching this group and numerical id"))
+        return server.toDefinition()
+    }
+
+    override suspend fun stopServerByNumerical(request: StopServerByNumericalRequest): ServerDefinition {
+        val server = serverRepository.findServerByNumerical(request.groupName, request.numericalId.toInt())
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("No server was found matching this group and numerical id"))
+        try {
+            return stopServer(server.toDefinition(), request.stopCause)
+        } catch (e: Exception) {
+            throw StatusException(
+                Status.INTERNAL.withDescription("Error occured whilest cleaning up stopped server: ").withCause(e)
             )
-            responseObserver.onCompleted()
         }
     }
 
-    override fun getServerByNumerical(
-        request: GetServerByNumericalRequest,
-        responseObserver: StreamObserver<ServerDefinition>
-    ) {
-        serverRepository.findServerByNumerical(request.group, request.numericalId.toInt()).thenApply { server ->
-            if (server == null) {
-                responseObserver.onError(
-                    Status.NOT_FOUND
-                        .withDescription("No server was found matching this group and numerical id")
-                        .asRuntimeException()
-                )
-                return@thenApply
-            }
-            responseObserver.onNext(server.toDefinition())
-            responseObserver.onCompleted()
-        }
-    }
-
-    override fun stopServerByNumerical(
-        request: StopServerByNumericalRequest,
-        responseObserver: StreamObserver<ServerDefinition>
-    ) {
-
-        serverRepository.findServerByNumerical(request.group, request.numericalId.toInt()).thenApply { server ->
-            if (server == null) {
-                responseObserver.onError(
-                    Status.NOT_FOUND
-                        .withDescription("No server was found matching this group and numerical id")
-                        .asRuntimeException()
-                )
-                return@thenApply
-            }
-            stopServer(server.toDefinition()).thenApply {
-                responseObserver.onNext(it)
-                responseObserver.onCompleted()
-            }.exceptionally {
-                responseObserver.onError(it)
-            }
-        }
-
-    }
-
-    override fun updateServer(request: ServerUpdateRequest, responseObserver: StreamObserver<ServerDefinition>) {
+    override suspend fun updateServer(request: UpdateServerRequest): ServerDefinition {
         val deleted = request.deleted
         val server = Server.fromDefinition(request.server)
         if (!deleted) {
             try {
+                val before = serverRepository.find(server.uniqueId)
+                    ?: throw StatusException(Status.NOT_FOUND.withDescription("Server not found"))
+                pubSubClient.publish(
+                    "event",
+                    ServerUpdateEvent.newBuilder()
+                        .setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                        .setServerBefore(before.toDefinition()).setServerAfter(request.server).build()
+                )
                 serverRepository.save(server)
-            }catch (e: Exception) {
-                responseObserver.onError(
+                return server.toDefinition()
+            } catch (e: Exception) {
+                throw StatusException(
                     Status.INTERNAL
                         .withDescription("Could not update server")
                         .withCause(e)
-                        .asRuntimeException()
                 )
-                return
             }
-            responseObserver.onNext(server.toDefinition())
-            responseObserver.onCompleted()
         } else {
             logger.info("Deleting server ${server.uniqueId} of group ${request.server.groupName}...")
-            serverRepository.delete(server).thenApply thenDelete@ {
-                if(!it) {
-                    responseObserver.onError(
-                        Status.INTERNAL
-                            .withDescription("Could not delete server")
-                            .asRuntimeException()
-                    )
-                    return@thenDelete
-                }
-                logger.info("Deleted server ${server.uniqueId} of group ${request.server.groupName}.")
-                responseObserver.onNext(server.toDefinition())
-                responseObserver.onCompleted()
-            }.exceptionally {
-                responseObserver.onError(
+            val deleteSuccess = serverRepository.delete(server)
+            if (!deleteSuccess) {
+                throw StatusException(
                     Status.INTERNAL
                         .withDescription("Could not delete server")
-                        .withCause(it)
-                        .asRuntimeException()
                 )
             }
+            logger.info("Deleted server ${server.uniqueId} of group ${request.server.groupName}.")
+            pubSubClient.publish(
+                "event", ServerStopEvent.newBuilder()
+                    .setServer(request.server)
+                    .setStoppedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setStopCause(ServerStopCause.NATURAL_STOP)
+                    .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
+                    .build()
+            )
+            return server.toDefinition()
         }
     }
 
-    override fun getServerById(request: ServerIdRequest, responseObserver: StreamObserver<ServerDefinition>) {
-        serverRepository.find(request.id).thenApply { server ->
-            if (server == null) {
-                responseObserver.onError(
-                    Status.NOT_FOUND
-                        .withDescription("No server was found matching this unique id")
-                        .asRuntimeException()
-                )
-                return@thenApply
-            }
-            responseObserver.onNext(server.toDefinition())
-            responseObserver.onCompleted()
-        }
-
+    override suspend fun getServerById(request: GetServerByIdRequest): ServerDefinition {
+        val server = serverRepository.find(request.serverId) ?: throw StatusException(
+            Status.NOT_FOUND
+                .withDescription("No server was found matching this unique id")
+        )
+        return server.toDefinition()
     }
 
-    override fun getServersByGroup(
-        request: GroupNameRequest,
-        responseObserver: StreamObserver<GetServersByGroupResponse>
-    ) {
-        serverRepository.findServersByGroup(request.name).thenApply { servers ->
-            val response = GetServersByGroupResponse.newBuilder()
-                .addAllServers(servers.map { it.toDefinition() })
-                .build()
-            responseObserver.onNext(response)
-            responseObserver.onCompleted()
-        }
+    override suspend fun getServersByGroup(request: GetServersByGroupRequest): GetServersByGroupResponse {
+        val groupServers = serverRepository.findServersByGroup(request.groupName)
+        return getServersByGroupResponse { servers.addAll(groupServers.map { it.toDefinition() }) }
     }
 
-    override fun getServersByType(
-        request: ServerTypeRequest,
-        responseObserver: StreamObserver<GetServersByGroupResponse>
-    ) {
-        serverRepository.findServersByType(request.type).thenApply { servers ->
-            val response = GetServersByGroupResponse.newBuilder()
-                .addAllServers(servers.map { it.toDefinition() })
-                .build()
-            responseObserver.onNext(response)
-            responseObserver.onCompleted()
+    override suspend fun getServersByType(request: ServerTypeRequest): GetServersByTypeResponse {
+        val typeServers = serverRepository.findServersByType(request.serverType)
+        return getServersByTypeResponse { servers.addAll(typeServers.map { it.toDefinition() }) }
+    }
+
+    override suspend fun startServer(request: ControllerStartServerRequest): ServerDefinition {
+        val host = hostRepository.find(serverRepository)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("No server host found, could not start server"))
+        val group = groupRepository.find(request.groupName)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("No group was found matching this name"))
+        try {
+            val server = startServer(host, group)
+            pubSubClient.publish(
+                "event", ServerStartEvent.newBuilder()
+                    .setServer(server)
+                    .setStartedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setStartCause(request.startCause)
+                    .build()
+            )
+            return server
+        } catch (e: Exception) {
+            throw StatusException(Status.INTERNAL.withDescription("Error whilst starting server").withCause(e))
         }
     }
 
-    override fun startServer(request: GroupNameRequest, responseObserver: StreamObserver<ServerDefinition>) {
-        hostRepository.find(serverRepository).thenApply { host ->
-            if (host == null) {
-                responseObserver.onError(
-                    Status.NOT_FOUND
-                        .withDescription("No server host found, could not start server")
-                        .asRuntimeException()
-                )
-                return@thenApply
-            }
-            groupRepository.find(request.name).thenApply { group ->
-                if (group == null) {
-                    responseObserver.onError(
-                        Status.NOT_FOUND
-                            .withDescription("No group was found matching this name")
-                            .asRuntimeException()
-                    )
-                } else {
-                    startServer(host, group)
-                }
-            }
-        }
-    }
-
-    private fun startServer(host: ServerHost, group: Group): CompletableFuture<ServerDefinition> {
+    private suspend fun startServer(host: ServerHost, group: Group): ServerDefinition {
         val numericalId = numericalIdRepository.findNextNumericalId(group.name)
         val server = buildServer(group, numericalId, forwardingSecret)
         serverRepository.save(server)
-        val channel = host.createChannel()
-        val stub = ServerHostServiceGrpc.newFutureStub(channel)
-            .withCallCredentials(authCallCredentials)
+        val stub = host.stub
         serverRepository.save(server)
-        return stub.startServer(
-            StartServerRequest.newBuilder()
-                .setGroup(group.toDefinition())
-                .setServer(server.toDefinition())
-                .build()
-        ).toCompletable().thenApply {
-            serverRepository.save(Server.fromDefinition(it))
-            channel.shutdown()
-            return@thenApply it
-        }.exceptionally {
+        try {
+            val result = stub.startServer(
+                ServerHostStartServerRequest.newBuilder()
+                    .setGroup(group.toDefinition())
+                    .setServer(server.toDefinition())
+                    .build()
+            )
+            serverRepository.save(Server.fromDefinition(result))
+            return result
+        } catch (e: Exception) {
             serverRepository.delete(server)
             numericalIdRepository.removeNumericalId(group.name, server.numericalId)
-            channel.shutdown()
-            throw it
+            logger.error("Error whilst starting server:", e)
+            throw e
         }
     }
 
@@ -257,93 +186,85 @@ class ServerService(
         return Server.fromDefinition(
             ServerDefinition.newBuilder()
                 .setNumericalId(numericalId)
-                .setType(group.type)
+                .setServerType(group.type)
                 .setGroupName(group.name)
                 .setMinimumMemory(group.minMemory)
                 .setMaximumMemory(group.maxMemory)
-                .setState(ServerState.PREPARING)
+                .setServerState(ServerState.PREPARING)
                 .setMaxPlayers(group.maxPlayers)
-                .setCreatedAt(LocalDateTime.now().toString())
-                .setUpdatedAt(LocalDateTime.now().toString())
+                .setCreatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                .setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                 .setPlayerCount(0)
-                .setUniqueId(UUID.randomUUID().toString().replace("-", "")).putAllProperties(
+                .setUniqueId(UUID.randomUUID().toString().replace("-", "")).putAllCloudProperties(
                     mapOf(
                         *group.properties.entries.map { it.key to it.value }.toTypedArray(),
-                        "forwarding-secret" to forwardingSecret,
+                        "forwarding-secret" to forwardingSecret
                     )
                 ).build()
         )
     }
 
-    override fun stopServer(request: ServerIdRequest, responseObserver: StreamObserver<ServerDefinition>) {
-        serverRepository.find(request.id).thenApply { server ->
-            if (server == null) {
-                throw Status.NOT_FOUND
-                    .withDescription("No server was found matching this id.")
-                    .asRuntimeException()
-            }
-            stopServer(server.toDefinition()).thenApply {
-                responseObserver.onNext(it)
-                responseObserver.onCompleted()
-            }.exceptionally {
-                responseObserver.onError(it)
-            }.get()
-        }.exceptionally {
-            responseObserver.onError(it)
+    override suspend fun stopServer(request: StopServerRequest): ServerDefinition {
+        val server = serverRepository.find(request.serverId)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("No server was found matching this id."))
+        try {
+            val stopped = stopServer(server.toDefinition(), request.stopCause)
+            return stopped
+        } catch (e: Exception) {
+            throw StatusException(Status.INTERNAL.withDescription("Error whilst stopping server").withCause(e))
         }
     }
 
-    private fun stopServer(server: ServerDefinition): CompletableFuture<ServerDefinition> {
+    private suspend fun stopServer(server: ServerDefinition, cause: ServerStopCause = ServerStopCause.NATURAL_STOP): ServerDefinition {
         val host = hostRepository.findServerHostById(server.hostId)
             ?: throw Status.NOT_FOUND
                 .withDescription("No server host was found matching this server.")
                 .asRuntimeException()
-        val channel = host.createChannel()
-        val stub = ServerHostServiceGrpc.newFutureStub(channel)
-            .withCallCredentials(authCallCredentials)
-        return stub.stopServer(server).toCompletable().thenApply {
-            serverRepository.delete(Server.fromDefinition(server))
-            channel.shutdown()
-            return@thenApply it
+        val stub = host.stub
+        try {
+            val stopped = stub.stopServer(server)
+            pubSubClient.publish(
+                "event", ServerStopEvent.newBuilder()
+                    .setServer(stopped)
+                    .setStoppedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setStopCause(cause)
+                    .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
+                    .build()
+            )
+            serverRepository.delete(Server.fromDefinition(stopped))
+            return stopped
+        } catch (e: Exception) {
+            logger.error("Server stop error occured:", e)
+            throw e
         }
     }
 
-    override fun updateServerProperty(
-        request: ServerUpdatePropertyRequest,
-        responseObserver: StreamObserver<ServerDefinition>
-    ) {
-        serverRepository.find(request.id).thenApply { server ->
-            if (server == null) {
-                throw Status.NOT_FOUND
-                    .withDescription("Server with id ${request.id} does not exist.")
-                    .asRuntimeException()
-            }
-            server.properties[request.key] = request.value
-            serverRepository.save(server)
-            responseObserver.onNext(server.toDefinition())
-            responseObserver.onCompleted()
-        }.exceptionally {
-            responseObserver.onError(it)
-        }
+    override suspend fun updateServerProperty(request: UpdateServerPropertyRequest): ServerDefinition {
+        val server = serverRepository.find(request.serverId)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("Server with id ${request.serverId} does not exist."))
+        val serverBefore = server.copy()
+        server.properties[request.propertyKey] = request.propertyValue
+        serverRepository.save(server)
+        pubSubClient.publish(
+            "event",
+            ServerUpdateEvent.newBuilder().setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                .setServerBefore(serverBefore.toDefinition()).setServerAfter(server.toDefinition()).build()
+        )
+        return server.toDefinition()
     }
 
-    override fun updateServerState(
-        request: ServerUpdateStateRequest,
-        responseObserver: StreamObserver<ServerDefinition>
-    ) {
-        serverRepository.find(request.id).thenApply { server ->
-            if (server == null) {
-                throw Status.NOT_FOUND
-                    .withDescription("Server with id ${request.id} does not exist.")
-                    .asRuntimeException()
-            }
-            server.state = request.state
-            serverRepository.save(server)
-            responseObserver.onNext(server.toDefinition())
-            responseObserver.onCompleted()
-        }.exceptionally {
-            responseObserver.onError(it)
-        }
+    override suspend fun updateServerState(request: UpdateServerStateRequest): ServerDefinition {
+        val server = serverRepository.find(request.serverId)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("Server with id ${request.serverId} does not exist."))
+        val serverBefore = server.copy()
+        server.state = request.serverState
+        serverRepository.save(server)
+        pubSubClient.publish(
+            "event",
+            ServerUpdateEvent.newBuilder().setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                .setServerBefore(serverBefore.toDefinition()).setServerAfter(server.toDefinition()).build()
+        )
+        return server.toDefinition()
     }
 
 }

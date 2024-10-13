@@ -1,4 +1,4 @@
-package app.simplecloud.controller.api.impl
+package app.simplecloud.controller.api.impl.future
 
 import app.simplecloud.controller.api.ServerApi
 import app.simplecloud.controller.shared.auth.AuthCallCredentials
@@ -9,10 +9,10 @@ import app.simplecloud.controller.shared.server.Server
 import io.grpc.ManagedChannel
 import java.util.concurrent.CompletableFuture
 
-class ServerApiImpl(
+class ServerApiFutureImpl(
     managedChannel: ManagedChannel,
     authCallCredentials: AuthCallCredentials
-) : ServerApi {
+) : ServerApi.Future {
 
     private val serverServiceStub: ControllerServerServiceGrpc.ControllerServerServiceFutureStub =
         ControllerServerServiceGrpc.newFutureStub(managedChannel).withCallCredentials(authCallCredentials)
@@ -25,8 +25,19 @@ class ServerApiImpl(
 
     override fun getServerById(id: String): CompletableFuture<Server> {
         return serverServiceStub.getServerById(
-            ServerIdRequest.newBuilder()
-                .setId(id)
+            GetServerByIdRequest.newBuilder()
+                .setServerId(id)
+                .build()
+        ).toCompletable().thenApply {
+            Server.fromDefinition(it)
+        }
+    }
+
+    override fun getServerByNumerical(groupName: String, numericalId: Long): CompletableFuture<Server> {
+        return serverServiceStub.getServerByNumerical(
+            GetServerByNumericalRequest.newBuilder()
+                .setGroupName(groupName)
+                .setNumericalId(numericalId)
                 .build()
         ).toCompletable().thenApply {
             Server.fromDefinition(it)
@@ -35,8 +46,8 @@ class ServerApiImpl(
 
     override fun getServersByGroup(groupName: String): CompletableFuture<List<Server>> {
         return serverServiceStub.getServersByGroup(
-            GroupNameRequest.newBuilder()
-                .setName(groupName)
+            GetServersByGroupRequest.newBuilder()
+                .setGroupName(groupName)
                 .build()
         ).toCompletable().thenApply {
             Server.fromDefinition(it.serversList)
@@ -50,38 +61,41 @@ class ServerApiImpl(
     override fun getServersByType(type: ServerType): CompletableFuture<List<Server>> {
         return serverServiceStub.getServersByType(
             ServerTypeRequest.newBuilder()
-                .setType(type)
+                .setServerType(type)
                 .build()
         ).toCompletable().thenApply {
             Server.fromDefinition(it.serversList)
         }
     }
 
-    override fun startServer(groupName: String): CompletableFuture<Server?> {
+    override fun startServer(groupName: String, startCause: ServerStartCause): CompletableFuture<Server?> {
         return serverServiceStub.startServer(
-            GroupNameRequest.newBuilder()
-                .setName(groupName)
+            ControllerStartServerRequest.newBuilder()
+                .setGroupName(groupName)
+                .setStartCause(startCause)
                 .build()
         ).toCompletable().thenApply {
             Server.fromDefinition(it)
         }
     }
 
-    override fun stopServer(groupName: String, numericalId: Long): CompletableFuture<Server> {
+    override fun stopServer(groupName: String, numericalId: Long, stopCause: ServerStopCause): CompletableFuture<Server> {
         return serverServiceStub.stopServerByNumerical(
             StopServerByNumericalRequest.newBuilder()
-                .setGroup(groupName)
+                .setGroupName(groupName)
                 .setNumericalId(numericalId)
+                .setStopCause(stopCause)
                 .build()
         ).toCompletable().thenApply {
             Server.fromDefinition(it)
         }
     }
 
-    override fun stopServer(id: String): CompletableFuture<Server> {
+    override fun stopServer(id: String, stopCause: ServerStopCause): CompletableFuture<Server> {
         return serverServiceStub.stopServer(
-            ServerIdRequest.newBuilder()
-                .setId(id)
+            StopServerRequest.newBuilder()
+                .setServerId(id)
+                .setStopCause(stopCause)
                 .build()
         ).toCompletable().thenApply {
             Server.fromDefinition(it)
@@ -90,9 +104,9 @@ class ServerApiImpl(
 
     override fun updateServerState(id: String, state: ServerState): CompletableFuture<Server> {
         return serverServiceStub.updateServerState(
-            ServerUpdateStateRequest.newBuilder()
-                .setState(state)
-                .setId(id)
+            UpdateServerStateRequest.newBuilder()
+                .setServerState(state)
+                .setServerId(id)
                 .build()
         ).toCompletable().thenApply {
             return@thenApply Server.fromDefinition(it)
@@ -101,10 +115,10 @@ class ServerApiImpl(
 
     override fun updateServerProperty(id: String, key: String, value: Any): CompletableFuture<Server> {
         return serverServiceStub.updateServerProperty(
-            ServerUpdatePropertyRequest.newBuilder()
-                .setKey(key)
-                .setValue(value.toString())
-                .setId(id)
+            UpdateServerPropertyRequest.newBuilder()
+                .setPropertyKey(key)
+                .setPropertyValue(value.toString())
+                .setServerId(id)
                 .build()
         ).toCompletable().thenApply {
             return@thenApply Server.fromDefinition(it)

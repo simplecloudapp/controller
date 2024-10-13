@@ -5,7 +5,6 @@ plugins {
 
 dependencies {
     api(project(":controller-shared"))
-    api(rootProject.libs.kotlinCoroutines)
     api(rootProject.libs.bundles.jooq)
     api(rootProject.libs.sqliteJdbc)
     jooqCodegen(rootProject.libs.jooqMetaExtensions)
@@ -40,6 +39,7 @@ tasks.named("compileKotlin") {
 jooq {
     configuration {
         generator {
+            name = "org.jooq.codegen.KotlinGenerator"
             target {
                 directory = "build/generated/source/db/main/java"
                 packageName = "app.simplecloud.controller.shared.db"

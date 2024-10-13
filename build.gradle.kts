@@ -1,5 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlin)
@@ -10,7 +9,7 @@ plugins {
 
 allprojects {
     group = "app.simplecloud.controller"
-    version = "0.0.27-EXPERIMENTAL"
+    version = "0.0.30"
 
     repositories {
         mavenCentral()
@@ -20,7 +19,7 @@ allprojects {
 
 subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
-    apply(plugin = "com.github.johnrengelman.shadow")
+    apply(plugin = "com.gradleup.shadow")
     apply(plugin = "net.thebugmc.gradle.sonatype-central-portal-publisher")
     apply(plugin = "maven-publish")
 
@@ -42,11 +41,10 @@ subprojects {
     }
 
     kotlin {
-        jvmToolchain(17)
-    }
-
-    tasks.withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
+        jvmToolchain(21)
+        compilerOptions {
+            apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
+        }
     }
 
     tasks.named("shadowJar", ShadowJar::class) {

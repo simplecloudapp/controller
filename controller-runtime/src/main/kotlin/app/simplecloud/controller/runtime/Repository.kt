@@ -1,11 +1,9 @@
 package app.simplecloud.controller.runtime
 
-import java.util.concurrent.CompletableFuture
-
 
 interface Repository<E, I> {
-    fun delete(element: E): CompletableFuture<Boolean>
+    suspend fun delete(element: E): Boolean
     fun save(element: E)
-    fun find(identifier: I): CompletableFuture<E?>
-    fun getAll(): CompletableFuture<List<E>>
+    suspend fun find(identifier: I): E?
+    suspend fun getAll(): List<E>
 }

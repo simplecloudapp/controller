@@ -20,17 +20,15 @@ class Reconciler(
     private val serverStub = ControllerServerServiceGrpc.newFutureStub(managedChannel)
         .withCallCredentials(authCallCredentials)
 
-    fun reconcile() {
-        this.groupRepository.getAll().thenApply {
-            it.forEach { group ->
-                GroupReconciler(
-                    serverRepository,
-                    serverHostRepository,
-                    numericalIdRepository,
-                    serverStub,
-                    group
-                ).reconcile()
-            }
+    suspend fun reconcile() {
+        this.groupRepository.getAll().forEach { group ->
+            GroupReconciler(
+                serverRepository,
+                serverHostRepository,
+                numericalIdRepository,
+                serverStub,
+                group
+            ).reconcile()
         }
     }
 

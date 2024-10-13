@@ -3,10 +3,11 @@ package app.simplecloud.controller.runtime.host
 import app.simplecloud.controller.runtime.Repository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.shared.host.ServerHost
-import com.spotify.futures.CompletableFutures
 import io.grpc.ConnectivityState
-import java.util.concurrent.CompletableFuture
+import io.grpc.ManagedChannel
+import kotlinx.coroutines.coroutineScope
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 class ServerHostRepository : Repository<ServerHost, ServerRepository> {
 
@@ -20,40 +21,34 @@ class ServerHostRepository : Repository<ServerHost, ServerRepository> {
         hosts[element.id] = element
     }
 
-    override fun find(identifier: ServerRepository): CompletableFuture<ServerHost?> {
-        return mapHostsToServerHostWithServerCount(identifier).thenApply {
-            val serverHostWithServerCount = it.minByOrNull { it.serverCount }
-            serverHostWithServerCount?.serverHost
-        }
+    override suspend fun find(identifier: ServerRepository): ServerHost? {
+        return mapHostsToServerHostWithServerCount(identifier).minByOrNull { it.serverCount }?.serverHost
     }
 
-    fun areServerHostsAvailable(): CompletableFuture<Boolean> {
-        return CompletableFuture.supplyAsync {
-            hosts.any {
-                val channel = it.value.createChannel()
+    suspend fun areServerHostsAvailable(): Boolean {
+        return coroutineScope {
+            return@coroutineScope hosts.any {
+                val channel = it.value.stub.channel as ManagedChannel
                 val state = channel.getState(true)
-                channel.shutdown()
                 state == ConnectivityState.IDLE || state == ConnectivityState.READY
             }
         }
     }
 
-    override fun delete(element: ServerHost): CompletableFuture<Boolean> {
-        return CompletableFuture.completedFuture(hosts.remove(element.id, element))
+    override suspend fun delete(element: ServerHost): Boolean {
+        val host = hosts.get(element.id) ?: return false
+        (host.stub.channel as ManagedChannel).shutdown().awaitTermination(5L, TimeUnit.SECONDS)
+        return hosts.remove(element.id, element)
     }
 
-    override fun getAll(): CompletableFuture<List<ServerHost>> {
-        return CompletableFuture.completedFuture(hosts.values.toList())
+    override suspend fun getAll(): List<ServerHost> {
+        return hosts.values.toList()
     }
 
-    private fun mapHostsToServerHostWithServerCount(identifier: ServerRepository): CompletableFuture<List<ServerHostWithServerCount>> {
-        return CompletableFutures.allAsList(
-            hosts.values.map { serverHost ->
-                identifier.findServersByHostId(serverHost.id).thenApply {
-                    ServerHostWithServerCount(serverHost, it.size)
-                }
-            }
-        )
+    private suspend fun mapHostsToServerHostWithServerCount(identifier: ServerRepository): List<ServerHostWithServerCount> {
+        return hosts.values.map { serverHost ->
+            ServerHostWithServerCount(serverHost, identifier.findServersByHostId(serverHost.id).size)
+        }
     }
 
 }

@@ -2,145 +2,123 @@ package app.simplecloud.controller.runtime.server
 
 import app.simplecloud.controller.runtime.LoadableRepository
 import app.simplecloud.controller.runtime.database.Database
-import app.simplecloud.controller.shared.db.Tables.CLOUD_SERVERS
-import app.simplecloud.controller.shared.db.Tables.CLOUD_SERVER_PROPERTIES
 import app.simplecloud.controller.shared.db.tables.records.CloudServersRecord
+import app.simplecloud.controller.shared.db.tables.references.CLOUD_SERVERS
+import app.simplecloud.controller.shared.db.tables.references.CLOUD_SERVER_PROPERTIES
 import app.simplecloud.controller.shared.server.Server
 import build.buf.gen.simplecloud.controller.v1.ServerState
 import build.buf.gen.simplecloud.controller.v1.ServerType
-import org.jooq.Result
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.toCollection
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.withContext
+import org.jooq.exception.DataAccessException
 import java.time.LocalDateTime
-import java.util.concurrent.CompletableFuture
 
 class ServerRepository(
     private val database: Database,
     private val numericalIdRepository: ServerNumericalIdRepository
 ) : LoadableRepository<Server, String> {
 
-
-    override fun find(identifier: String): CompletableFuture<Server?> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select()
-                .from(CLOUD_SERVERS)
-                .where(CLOUD_SERVERS.UNIQUE_ID.eq(identifier))
-                .fetchInto(
-                    CLOUD_SERVERS
-                )
-            return@supplyAsync toList(query).firstOrNull()
-        }
+    override suspend fun find(identifier: String): Server? {
+       return database.context.selectFrom(CLOUD_SERVERS)
+            .where(CLOUD_SERVERS.UNIQUE_ID.eq(identifier))
+            .limit(1)
+            .awaitFirstOrNull()
+            ?.let { record -> mapCloudServersRecordToServer(record) }
     }
 
 
-    fun findServerByNumerical(group: String, id: Int): CompletableFuture<Server?> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select().from(CLOUD_SERVERS)
-                .where(
-                    CLOUD_SERVERS.GROUP_NAME.eq(group)
-                        .and(CLOUD_SERVERS.NUMERICAL_ID.eq(id))
-                )
-                .fetchInto(CLOUD_SERVERS)
-            return@supplyAsync toList(query).firstOrNull()
-        }
-    }
-
-    override fun getAll(): CompletableFuture<List<Server>> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select()
-                .from(CLOUD_SERVERS)
-                .fetchInto(CLOUD_SERVERS)
-            return@supplyAsync toList(query)
-        }
-    }
-
-    fun findServersByHostId(id: String): CompletableFuture<List<Server>> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select()
-                .from(CLOUD_SERVERS)
-                .where(CLOUD_SERVERS.HOST_ID.eq(id))
-                .fetchInto(
-                    CLOUD_SERVERS
-                )
-            return@supplyAsync toList(query)
-        }
-    }
-
-    fun findServersByGroup(group: String): CompletableFuture<List<Server>> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select()
-                .from(CLOUD_SERVERS)
-                .where(CLOUD_SERVERS.GROUP_NAME.eq(group))
-                .fetchInto(
-                    CLOUD_SERVERS
-                )
-            return@supplyAsync toList(query)
-        }
-
-    }
-
-    fun findServersByType(type: ServerType): CompletableFuture<List<Server>> {
-        return CompletableFuture.supplyAsync {
-            val query = database.context.select()
-                .from(CLOUD_SERVERS)
-                .where(CLOUD_SERVERS.TYPE.eq(type.toString()))
-                .fetchInto(CLOUD_SERVERS)
-            return@supplyAsync toList(query)
-        }
-    }
-
-    private fun toList(query: Result<CloudServersRecord>): List<Server> {
-        val result = mutableListOf<Server>()
-        query.map {
-            val propertiesQuery =
-                database.context.select()
-                    .from(CLOUD_SERVER_PROPERTIES)
-                    .where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(it.uniqueId))
-                    .fetchInto(CLOUD_SERVER_PROPERTIES)
-            result.add(
-                Server(
-                    it.uniqueId,
-                    ServerType.valueOf(it.type),
-                    it.groupName,
-                    it.hostId,
-                    it.numericalId,
-                    it.ip,
-                    it.port.toLong(),
-                    it.minimumMemory.toLong(),
-                    it.maximumMemory.toLong(),
-                    it.maxPlayers.toLong(),
-                    it.playerCount.toLong(),
-                    propertiesQuery.map { item ->
-                        item.key to item.value
-                    }.toMap().toMutableMap(),
-                    ServerState.valueOf(it.state),
-                    it.createdAt,
-                    it.updatedAt
-                )
+    suspend fun findServerByNumerical(group: String, id: Int): Server? {
+        return database.context.selectFrom(CLOUD_SERVERS)
+            .where(
+                CLOUD_SERVERS.GROUP_NAME.eq(group)
+                    .and(CLOUD_SERVERS.NUMERICAL_ID.eq(id))
             )
-        }
-        return result
+            .limit(1)
+            .awaitFirstOrNull()
+            ?.let { record -> mapCloudServersRecordToServer(record) }
     }
 
-    override fun delete(element: Server): CompletableFuture<Boolean> {
+    override suspend fun getAll(): List<Server> {
+        return database.context.selectFrom(CLOUD_SERVERS)
+            .asFlow()
+            .toCollection(mutableListOf())
+            .map { record -> mapCloudServersRecordToServer(record) }
+    }
+
+    suspend fun findServersByHostId(id: String): List<Server> {
+        return database.context.selectFrom(CLOUD_SERVERS)
+            .where(CLOUD_SERVERS.HOST_ID.eq(id))
+            .asFlow()
+            .toCollection(mutableListOf())
+            .map { record -> mapCloudServersRecordToServer(record) }
+    }
+
+    suspend fun findServersByGroup(group: String): List<Server> {
+        return database.context.selectFrom(CLOUD_SERVERS)
+            .where(CLOUD_SERVERS.GROUP_NAME.eq(group))
+            .asFlow()
+            .toCollection(mutableListOf())
+            .map { record -> mapCloudServersRecordToServer(record) }
+    }
+
+    suspend fun findServersByType(type: ServerType): List<Server> {
+        return database.context.selectFrom(CLOUD_SERVERS)
+            .where(CLOUD_SERVERS.TYPE.eq(type.toString()))
+            .asFlow()
+            .toCollection(mutableListOf())
+            .map { record -> mapCloudServersRecordToServer(record) }
+    }
+
+    private fun mapCloudServersRecordToServer(record: CloudServersRecord): Server {
+        val propertiesQuery =
+            database.context.select()
+                .from(CLOUD_SERVER_PROPERTIES)
+                .where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(record.uniqueId))
+                .fetchInto(CLOUD_SERVER_PROPERTIES)
+
+        return Server(
+            record.uniqueId!!,
+            ServerType.valueOf(record.type!!),
+            record.groupName!!,
+            record.hostId!!,
+            record.numericalId!!,
+            record.ip!!,
+            record.port!!.toLong(),
+            record.minimumMemory!!.toLong(),
+            record.maximumMemory!!.toLong(),
+            record.maxPlayers!!.toLong(),
+            record.playerCount!!.toLong(),
+            propertiesQuery.map { item ->
+                item.key!! to item.value!!
+            }.toMap().toMutableMap(),
+            ServerState.valueOf(record.state!!),
+            record.createdAt!!,
+            record.updatedAt!!
+        )
+    }
+
+    override suspend fun delete(element: Server): Boolean {
         val canDelete =
-            database.context.deleteFrom(CLOUD_SERVER_PROPERTIES)
-                .where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(element.uniqueId))
-                .executeAsync().toCompletableFuture().thenApply {
-                    return@thenApply true
-                }.exceptionally {
-                    it.printStackTrace()
-                    return@exceptionally false
-                }.get()
-        if (!canDelete) return CompletableFuture.completedFuture(false)
-        numericalIdRepository.removeNumericalId(element.group, element.numericalId)
-        return database.context.deleteFrom(CLOUD_SERVERS)
-            .where(CLOUD_SERVERS.UNIQUE_ID.eq(element.uniqueId))
-            .executeAsync()
-            .toCompletableFuture().thenApply {
-                return@thenApply it > 0
-            }.exceptionally {
-                it.printStackTrace()
-                return@exceptionally false
+            withContext(Dispatchers.IO) {
+                try {
+                    database.context.deleteFrom(CLOUD_SERVER_PROPERTIES)
+                        .where(CLOUD_SERVER_PROPERTIES.SERVER_ID.eq(element.uniqueId))
+                        .execute()
+                    return@withContext true
+                } catch (e: DataAccessException) {
+                    return@withContext false
+                }
             }
+        if (!canDelete) return false
+        numericalIdRepository.removeNumericalId(element.group, element.numericalId)
+        return withContext(Dispatchers.IO) {
+            database.context.deleteFrom(CLOUD_SERVERS)
+                .where(CLOUD_SERVERS.UNIQUE_ID.eq(element.uniqueId))
+                .execute() > 0
+        }
     }
 
     @Synchronized
@@ -219,14 +197,15 @@ class ServerRepository(
     }
 
     override fun load(): List<Server> {
-        val query = database.context.select()
-            .from(CLOUD_SERVERS)
+        val cloudServerList = database.context.selectFrom(CLOUD_SERVERS)
             .fetchInto(CLOUD_SERVERS)
-        val list = toList(query)
-        list.forEach {
+            .map { record -> mapCloudServersRecordToServer(record) }
+
+        cloudServerList.forEach {
             numericalIdRepository.saveNumericalId(it.group, it.numericalId)
         }
-        return list
+
+        return cloudServerList
     }
 
 }

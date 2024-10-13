@@ -9,7 +9,6 @@ import org.spongepowered.configurate.yaml.NodeStyle
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.io.File
 import java.nio.file.*
-import java.util.concurrent.CompletableFuture
 
 
 abstract class YamlDirectoryRepository<E, I>(
@@ -25,13 +24,13 @@ abstract class YamlDirectoryRepository<E, I>(
 
     abstract fun getFileName(identifier: I): String
 
-    override fun delete(element: E): CompletableFuture<Boolean> {
-        val file = entities.keys.find { entities[it] == element } ?: return CompletableFuture.completedFuture(false)
-        return CompletableFuture.completedFuture(deleteFile(file))
+    override suspend fun delete(element: E): Boolean {
+        val file = entities.keys.find { entities[it] == element } ?: return false
+        return deleteFile(file)
     }
 
-    override fun getAll(): CompletableFuture<List<E>> {
-        return CompletableFuture.completedFuture(entities.values.toList())
+    override suspend fun getAll(): List<E> {
+        return entities.values.toList()
     }
 
     override fun load(): List<E> {
@@ -116,7 +115,7 @@ abstract class YamlDirectoryRepository<E, I>(
                     when (kind) {
                         StandardWatchEventKinds.ENTRY_CREATE,
                         StandardWatchEventKinds.ENTRY_MODIFY
-                        -> {
+                            -> {
                             load(resolvedPath.toFile())
                         }
 

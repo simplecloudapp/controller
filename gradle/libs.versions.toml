@@ -1,12 +1,13 @@
 [versions]
-kotlin = "1.8.0"
-kotlinCoroutines = "1.4.2"
-shadow = "8.1.1"
+kotlin = "2.0.20"
+kotlinCoroutines = "1.9.0"
+shadow = "8.3.3"
 log4j = "2.20.0"
 protobuf = "3.25.2"
 grpc = "1.61.0"
 grpcKotlin = "1.4.1"
-simpleCloudProtoSpecs = "1.4.1.1.20240504121939.09af2f3cc691"
+simpleCloudProtoSpecs = "1.4.1.1.20241001163139.58018cb317ed"
+simpleCloudPubSub = "1.0.5"
 jooq = "3.19.3"
 configurate = "4.1.2"
 sqliteJdbc = "3.44.1.0"
@@ -31,10 +32,12 @@ grpcProtobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
 grpcNettyShaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 
 simpleCloudProtoSpecs = { module = "build.buf.gen:simplecloud_proto-specs_grpc_kotlin", version.ref = "simpleCloudProtoSpecs" }
+simpleCloudPubSub = { module = "app.simplecloud:simplecloud-pubsub", version.ref = "simpleCloudPubSub" }
 
-qooq = { module = "org.jooq:jooq", version.ref = "jooq" }
+qooq = { module = "org.jooq:jooq-kotlin", version.ref = "jooq" }
 qooqMeta = { module = "org.jooq:jooq-meta", version.ref = "jooq" }
 jooqMetaExtensions = { module = "org.jooq:jooq-meta-extensions", version.ref = "jooq" }
+jooqKotlinCoroutines = { module = "org.jooq:jooq-kotlin-coroutines", version.ref = "jooq" }
 
 configurateYaml = { module = "org.spongepowered:configurate-yaml", version.ref = "configurate" }
 configurateExtraKotlin = { module = "org.spongepowered:configurate-extra-kotlin", version.ref = "configurate" }
@@ -57,11 +60,12 @@ proto = [
     "grpcKotlinStub",
     "grpcProtobuf",
     "grpcNettyShaded",
-    "simpleCloudProtoSpecs"
+    "simpleCloudProtoSpecs",
 ]
 jooq = [
     "qooq",
-    "qooqMeta"
+    "qooqMeta",
+    "jooqKotlinCoroutines"
 ]
 configurate = [
     "configurateYaml",
@@ -70,6 +74,6 @@ configurate = [
 
 [plugins]
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 jooqCodegen = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }
 sonatypeCentralPortalPublisher = { id = "net.thebugmc.gradle.sonatype-central-portal-publisher", version.ref = "sonatypeCentralPortalPublisher" }

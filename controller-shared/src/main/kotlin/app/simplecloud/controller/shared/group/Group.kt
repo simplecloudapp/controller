@@ -7,7 +7,7 @@ import org.spongepowered.configurate.objectmapping.ConfigSerializable
 @ConfigSerializable
 data class Group(
     val name: String = "",
-    val type: ServerType = ServerType.OTHER,
+    val type: ServerType = ServerType.UNKNOWN_SERVER,
     val minMemory: Long = 0,
     val maxMemory: Long = 0,
     val startPort: Long = 0,
@@ -29,7 +29,7 @@ data class Group(
             .setMaximumOnlineCount(maxOnlineCount)
             .setMaxPlayers(maxPlayers)
             .setNewServerPlayerRatio(newServerPlayerRatio)
-            .putAllProperties(properties)
+            .putAllCloudProperties(properties)
             .build()
     }
 
@@ -46,7 +46,7 @@ data class Group(
                 groupDefinition.maximumOnlineCount,
                 groupDefinition.maxPlayers,
                 groupDefinition.newServerPlayerRatio,
-                groupDefinition.propertiesMap
+                groupDefinition.cloudPropertiesMap
             )
         }
     }

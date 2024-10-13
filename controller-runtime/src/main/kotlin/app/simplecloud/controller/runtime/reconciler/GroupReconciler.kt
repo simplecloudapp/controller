@@ -6,10 +6,9 @@ import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.server.Server
+import build.buf.gen.simplecloud.controller.v1.*
 import build.buf.gen.simplecloud.controller.v1.ControllerServerServiceGrpc.ControllerServerServiceFutureStub
-import build.buf.gen.simplecloud.controller.v1.GroupNameRequest
-import build.buf.gen.simplecloud.controller.v1.ServerIdRequest
-import build.buf.gen.simplecloud.controller.v1.ServerState
+import kotlinx.coroutines.runBlocking
 import org.apache.logging.log4j.LogManager
 import java.time.LocalDateTime
 import kotlin.math.min
@@ -23,11 +22,11 @@ class GroupReconciler(
 ) {
 
     private val logger = LogManager.getLogger(GroupReconciler::class.java)
-    private val servers = this.serverRepository.findServersByGroup(this.group.name).get()
+    private val servers = runBlocking { serverRepository.findServersByGroup(group.name) }
 
     private val availableServerCount = calculateAvailableServerCount()
 
-    fun reconcile() {
+    suspend fun reconcile() {
         cleanupServers()
         cleanupNumericalIds()
         startServers()
@@ -69,8 +68,9 @@ class GroupReconciler(
     private fun stopServer(server: Server) {
         logger.info("Stopping server ${server.uniqueId} of group ${server.group}")
         serverStub.stopServer(
-            ServerIdRequest.newBuilder()
-                .setId(server.uniqueId)
+            StopServerRequest.newBuilder()
+                .setServerId(server.uniqueId)
+                .setStopCause(ServerStopCause.RECONCILE_STOP)
                 .build()
         ).toCompletable()
             .thenApply {
@@ -80,7 +80,7 @@ class GroupReconciler(
             }
     }
 
-    private fun cleanupNumericalIds() {
+    private suspend fun cleanupNumericalIds() {
         val usedNumericalIds = this.servers.map { it.numericalId }
         val numericalIds = this.numericalIdRepository.findNumericalIds(this.group.name)
 
@@ -97,19 +97,21 @@ class GroupReconciler(
         return server.updatedAt.isAfter(LocalDateTime.now().minusMinutes(INACTIVE_SERVER_TIME))
     }
 
-    private fun startServers() {
-        serverHostRepository.areServerHostsAvailable().thenApply {
-            if (!it) return@thenApply
-            if (isNewServerNeeded())
-                startServer()
-        }
+    private suspend fun startServers() {
+        val available = serverHostRepository.areServerHostsAvailable()
+        if(!available) return
+        if(isNewServerNeeded())
+            startServer()
     }
 
     private fun startServer() {
         logger.info("Starting new instance of group ${this.group.name}")
-        serverStub.startServer(GroupNameRequest.newBuilder().setName(this.group.name).build()).toCompletable()
+        serverStub.startServer(
+            ControllerStartServerRequest.newBuilder().setGroupName(this.group.name)
+                .setStartCause(ServerStartCause.RECONCILER_START).build()
+        ).toCompletable()
             .thenApply {
-                logger.info("Started new instance ${it.groupName}-${it.numericalId}/${it.uniqueId} of group ${this.group.name} on ${it.ip}:${it.port}")
+                logger.info("Started new instance ${it.groupName}-${it.numericalId}/${it.uniqueId} of group ${this.group.name} on ${it.serverIp}:${it.serverPort}")
             }.exceptionally {
                 it.printStackTrace()
                 logger.error("Could not start a new instance of group ${this.group.name}: ${it.message}")

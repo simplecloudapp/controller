@@ -1,21 +1,24 @@
-package app.simplecloud.controller.api.impl
+package app.simplecloud.controller.api.impl.future
 
 import app.simplecloud.controller.api.GroupApi
 import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import build.buf.gen.simplecloud.controller.v1.ControllerGroupServiceGrpc
+import build.buf.gen.simplecloud.controller.v1.CreateGroupRequest
+import build.buf.gen.simplecloud.controller.v1.DeleteGroupByNameRequest
 import build.buf.gen.simplecloud.controller.v1.GetGroupByNameRequest
 import build.buf.gen.simplecloud.controller.v1.GetAllGroupsRequest
 import build.buf.gen.simplecloud.controller.v1.GetGroupsByTypeRequest
 import build.buf.gen.simplecloud.controller.v1.ServerType
+import build.buf.gen.simplecloud.controller.v1.UpdateGroupRequest
 import io.grpc.ManagedChannel
 import java.util.concurrent.CompletableFuture
 
-class GroupApiImpl(
+class GroupApiFutureImpl(
     managedChannel: ManagedChannel,
     authCallCredentials: AuthCallCredentials
-) : GroupApi {
+) : GroupApi.Future {
 
     private val groupServiceStub: ControllerGroupServiceGrpc.ControllerGroupServiceFutureStub =
         ControllerGroupServiceGrpc.newFutureStub(managedChannel)
@@ -24,7 +27,7 @@ class GroupApiImpl(
     override fun getGroupByName(name: String): CompletableFuture<Group> {
         return groupServiceStub.getGroupByName(
             GetGroupByNameRequest.newBuilder()
-                .setName(name)
+                .setGroupName(name)
                 .build()
         ).toCompletable()
             .thenApply {
@@ -34,8 +37,8 @@ class GroupApiImpl(
 
     override fun deleteGroup(name: String): CompletableFuture<Group> {
         return groupServiceStub.deleteGroupByName(
-            GetGroupByNameRequest.newBuilder()
-                .setName(name)
+            DeleteGroupByNameRequest.newBuilder()
+                .setGroupName(name)
                 .build()
         ).toCompletable()
             .thenApply {
@@ -45,7 +48,9 @@ class GroupApiImpl(
 
     override fun createGroup(group: Group): CompletableFuture<Group> {
         return groupServiceStub.createGroup(
-            group.toDefinition()
+            CreateGroupRequest.newBuilder()
+                .setGroup(group.toDefinition())
+                .build()
         ).toCompletable()
             .thenApply {
                 Group.fromDefinition(it)
@@ -53,7 +58,11 @@ class GroupApiImpl(
     }
 
     override fun updateGroup(group: Group): CompletableFuture<Group> {
-        return groupServiceStub.updateGroup(group.toDefinition()).toCompletable().thenApply {
+        return groupServiceStub.updateGroup(
+            UpdateGroupRequest.newBuilder()
+                .setGroup(group.toDefinition())
+                .build()
+        ).toCompletable().thenApply {
             return@thenApply Group.fromDefinition(it)
         }
     }
@@ -65,7 +74,11 @@ class GroupApiImpl(
     }
 
     override fun getGroupsByType(type: ServerType): CompletableFuture<List<Group>> {
-        return groupServiceStub.getGroupsByType(GetGroupsByTypeRequest.newBuilder().setType(type).build()).toCompletable().thenApply {
+        return groupServiceStub.getGroupsByType(
+            GetGroupsByTypeRequest.newBuilder()
+                .setServerType(type)
+                .build()
+        ).toCompletable().thenApply {
             return@thenApply it.groupsList.map { group -> Group.fromDefinition(group) }
         }
     }
