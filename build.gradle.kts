@@ -9,7 +9,7 @@ plugins {
 
 allprojects {
     group = "app.simplecloud.controller"
-    version = "0.0.30-EXPERIMENTAL"
+    version = "0.0.30"
 
     repositories {
         mavenCentral()
@@ -37,11 +37,11 @@ subprojects {
     }
 
     java {
-        toolchain.languageVersion.set(JavaLanguageVersion.of(22))
+        toolchain.languageVersion.set(JavaLanguageVersion.of(21))
     }
 
     kotlin {
-        jvmToolchain(22)
+        jvmToolchain(21)
         compilerOptions {
             apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
         }
