@@ -29,9 +29,31 @@ subprojects {
     }
 
     publishing {
+        repositories {
+            maven {
+                name = "simplecloud"
+                url = uri("https://repo.simplecloud.app/snapshots/")
+                credentials {
+                    username = (project.findProperty("simplecloudUsername") as? String)?: System.getenv("SIMPLECLOUD_USERNAME")
+                    password = (project.findProperty("simplecloudPassword") as? String)?: System.getenv("SIMPLECLOUD_PASSWORD")
+                }
+                authentication {
+                    create<BasicAuthentication>("basic")
+                }
+            }
+        }
+
         publications {
+            // Not publish controller-runtime
+            if (project.name == "controller-runtime") {
+                return@publications
+            }
+
             create<MavenPublication>("mavenJava") {
                 from(components["java"])
+
+                val commitHash = System.getenv("COMMIT_HASH")?: return@create
+                version = "${project.version}-dev.$commitHash"
             }
         }
     }
