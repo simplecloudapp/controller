@@ -38,8 +38,8 @@ subprojects {
                 name = "simplecloud"
                 url = uri("https://repo.simplecloud.app/snapshots/")
                 credentials {
-                    username = (project.findProperty("simplecloudUsername") as? String)?: System.getenv("SIMPLECLOUD_USERNAME")
-                    password = (project.findProperty("simplecloudPassword") as? String)?: System.getenv("SIMPLECLOUD_PASSWORD")
+                    username = System.getenv("SIMPLECLOUD_USERNAME")?: (project.findProperty("simplecloudUsername") as? String)
+                    password = System.getenv("SIMPLECLOUD_PASSWORD")?: (project.findProperty("simplecloudPassword") as? String)
                 }
                 authentication {
                     create<BasicAuthentication>("basic")
