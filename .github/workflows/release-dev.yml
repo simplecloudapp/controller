@@ -48,6 +48,8 @@ jobs:
         run: ./gradlew publishMavenJavaPublicationToSimplecloudRepository
         env:
           COMMIT_HASH: ${{ env.COMMIT_HASH }}
+          SIMPLECLOUD_USERNAME: ${{ secrets.SIMPLECLOUD_USERNAME }}
+          SIMPLECLOUD_PASSWORD: ${{ secrets.SIMPLECLOUD_PASSWORD }}
 
       - name: Create Release
         id: create_release
