@@ -114,6 +114,10 @@ subprojects {
     }
 
     signing {
+        if (commitHash == null) {
+            return@signing
+        }
+
         sign(publishing.publications)
         useGpgCmd()
     }
