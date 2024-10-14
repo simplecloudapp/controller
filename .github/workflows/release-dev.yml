@@ -45,7 +45,7 @@ jobs:
         run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Publish to SimpleCloud Repository
-        run: ./gradlew publishAllPublicationsToSimplecloudRepository
+        run: ./gradlew publishMavenJavaPublicationToSimplecloudRepository
         env:
           COMMIT_HASH: ${{ env.COMMIT_HASH }}
 
