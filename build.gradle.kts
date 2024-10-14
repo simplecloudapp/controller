@@ -114,7 +114,7 @@ subprojects {
     }
 
     signing {
-        if (commitHash == null) {
+        if (commitHash != null) {
             return@signing
         }
 
