@@ -5,14 +5,12 @@ import build.buf.gen.simplecloud.controller.v1.ServerHostDefinition
 import build.buf.gen.simplecloud.controller.v1.ServerHostServiceGrpcKt
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
-import org.spongepowered.configurate.objectmapping.ConfigSerializable
 
-@ConfigSerializable
 data class ServerHost(
     val id: String,
     val host: String,
     val port: Int,
-    val stub: ServerHostServiceGrpcKt.ServerHostServiceCoroutineStub,
+    val stub: ServerHostServiceGrpcKt.ServerHostServiceCoroutineStub? = null,
 ) {
 
     fun toDefinition(): ServerHostDefinition {

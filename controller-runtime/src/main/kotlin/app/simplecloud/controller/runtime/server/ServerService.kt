@@ -42,7 +42,7 @@ class ServerService(
             serverRepository.findServersByHostId(serverHost.id).forEach { server ->
                 logger.info("Reattaching Server ${server.uniqueId} of group ${server.group}...")
                 try {
-                    val result = serverHost.stub.reattachServer(server.toDefinition())
+                    val result = serverHost.stub?.reattachServer(server.toDefinition()) ?: throw StatusException(Status.INTERNAL.withDescription("Could not reattach server, is the host misconfigured?"))
                     serverRepository.save(Server.fromDefinition(result))
                     logger.info("Success!")
                 } catch (e: Exception) {
@@ -163,7 +163,7 @@ class ServerService(
         val numericalId = numericalIdRepository.findNextNumericalId(group.name)
         val server = buildServer(group, numericalId, forwardingSecret)
         serverRepository.save(server)
-        val stub = host.stub
+        val stub = host.stub ?: throw StatusException(Status.INTERNAL.withDescription("Server host has no stub"))
         serverRepository.save(server)
         try {
             val result = stub.startServer(
@@ -220,7 +220,7 @@ class ServerService(
             ?: throw Status.NOT_FOUND
                 .withDescription("No server host was found matching this server.")
                 .asRuntimeException()
-        val stub = host.stub
+        val stub = host.stub ?: throw StatusException(Status.INTERNAL.withDescription("Server host has no stub"))
         try {
             val stopped = stub.stopServer(server)
             pubSubClient.publish(

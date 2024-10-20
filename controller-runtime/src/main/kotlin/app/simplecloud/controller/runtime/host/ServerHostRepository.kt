@@ -28,7 +28,7 @@ class ServerHostRepository : Repository<ServerHost, ServerRepository> {
     suspend fun areServerHostsAvailable(): Boolean {
         return coroutineScope {
             return@coroutineScope hosts.any {
-                val channel = it.value.stub.channel as ManagedChannel
+                val channel = it.value.stub?.channel as ManagedChannel
                 val state = channel.getState(true)
                 state == ConnectivityState.IDLE || state == ConnectivityState.READY
             }
@@ -36,8 +36,8 @@ class ServerHostRepository : Repository<ServerHost, ServerRepository> {
     }
 
     override suspend fun delete(element: ServerHost): Boolean {
-        val host = hosts.get(element.id) ?: return false
-        (host.stub.channel as ManagedChannel).shutdown().awaitTermination(5L, TimeUnit.SECONDS)
+        val host = hosts[element.id] ?: return false
+        (host.stub?.channel as ManagedChannel).shutdown().awaitTermination(5L, TimeUnit.SECONDS)
         return hosts.remove(element.id, element)
     }
 
