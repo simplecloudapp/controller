@@ -7,9 +7,13 @@ plugins {
     `maven-publish`
 }
 
+val baseVersion = "0.0.30"
+val commitHash = System.getenv("COMMIT_HASH")
+val snapshotversion = "${baseVersion}-dev.$commitHash"
+
 allprojects {
     group = "app.simplecloud.controller"
-    version = "0.0.30"
+    version = if (commitHash != null) snapshotversion else baseVersion
 
     repositories {
         mavenCentral()
@@ -29,7 +33,26 @@ subprojects {
     }
 
     publishing {
+        repositories {
+            maven {
+                name = "simplecloud"
+                url = uri("https://repo.simplecloud.app/snapshots/")
+                credentials {
+                    username = System.getenv("SIMPLECLOUD_USERNAME")?: (project.findProperty("simplecloudUsername") as? String)
+                    password = System.getenv("SIMPLECLOUD_PASSWORD")?: (project.findProperty("simplecloudPassword") as? String)
+                }
+                authentication {
+                    create<BasicAuthentication>("basic")
+                }
+            }
+        }
+
         publications {
+            // Not publish controller-runtime
+            if (project.name == "controller-runtime") {
+                return@publications
+            }
+
             create<MavenPublication>("mavenJava") {
                 from(components["java"])
             }
@@ -91,6 +114,10 @@ subprojects {
     }
 
     signing {
+        if (commitHash != null) {
+            return@signing
+        }
+
         sign(publishing.publications)
         useGpgCmd()
     }
