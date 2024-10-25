@@ -110,7 +110,6 @@ class ControllerRuntime(
                     serverRepository,
                     hostRepository,
                     groupRepository,
-                    controllerStartCommand.forwardingSecret,
                     authCallCredentials,
                     PubSubClient(controllerStartCommand.grpcHost, controllerStartCommand.pubSubGrpcPort, authCallCredentials)
                 )

@@ -21,7 +21,6 @@ class ServerService(
     private val serverRepository: ServerRepository,
     private val hostRepository: ServerHostRepository,
     private val groupRepository: GroupRepository,
-    private val forwardingSecret: String,
     private val authCallCredentials: AuthCallCredentials,
     private val pubSubClient: PubSubClient,
 ) : ControllerServerServiceGrpcKt.ControllerServerServiceCoroutineImplBase() {
@@ -161,7 +160,7 @@ class ServerService(
 
     private suspend fun startServer(host: ServerHost, group: Group): ServerDefinition {
         val numericalId = numericalIdRepository.findNextNumericalId(group.name)
-        val server = buildServer(group, numericalId, forwardingSecret)
+        val server = buildServer(group, numericalId)
         serverRepository.save(server)
         val stub = host.stub ?: throw StatusException(Status.INTERNAL.withDescription("Server host has no stub"))
         serverRepository.save(server)
@@ -182,7 +181,7 @@ class ServerService(
         }
     }
 
-    private fun buildServer(group: Group, numericalId: Int, forwardingSecret: String): Server {
+    private fun buildServer(group: Group, numericalId: Int): Server {
         return Server.fromDefinition(
             ServerDefinition.newBuilder()
                 .setNumericalId(numericalId)
@@ -197,8 +196,7 @@ class ServerService(
                 .setPlayerCount(0)
                 .setUniqueId(UUID.randomUUID().toString().replace("-", "")).putAllCloudProperties(
                     mapOf(
-                        *group.properties.entries.map { it.key to it.value }.toTypedArray(),
-                        "forwarding-secret" to forwardingSecret
+                        *group.properties.entries.map { it.key to it.value }.toTypedArray()
                     )
                 ).build()
         )
