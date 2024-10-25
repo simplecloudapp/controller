@@ -12,7 +12,7 @@ class GroupService(
     override suspend fun getGroupByName(request: GetGroupByNameRequest): GetGroupByNameResponse {
         val group = groupRepository.find(request.groupName)
             ?: throw StatusException(Status.NOT_FOUND.withDescription("This group does not exist"))
-        return getGroupByNameResponse { group.toDefinition() }
+        return getGroupByNameResponse { this.group = group.toDefinition() }
     }
 
     override suspend fun getAllGroups(request: GetAllGroupsRequest): GetAllGroupsResponse {
