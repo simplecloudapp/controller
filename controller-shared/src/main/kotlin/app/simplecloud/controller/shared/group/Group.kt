@@ -15,7 +15,7 @@ data class Group(
     val maxOnlineCount: Long = 0,
     val maxPlayers: Long = 0,
     val newServerPlayerRatio: Long = -1,
-    val properties: Map<String, String> = mapOf()
+    val properties: MutableMap<String, String> = mutableMapOf()
 ) {
 
     fun toDefinition(): GroupDefinition {
