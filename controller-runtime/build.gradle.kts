@@ -8,6 +8,7 @@ dependencies {
     api(rootProject.libs.bundles.jooq)
     api(rootProject.libs.sqliteJdbc)
     jooqCodegen(rootProject.libs.jooqMetaExtensions)
+    implementation(rootProject.libs.simplecloud.metrics)
     implementation(rootProject.libs.bundles.log4j)
     implementation(rootProject.libs.clikt)
     implementation(rootProject.libs.spotifyCompletableFutures)

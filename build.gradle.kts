@@ -18,6 +18,7 @@ allprojects {
     repositories {
         mavenCentral()
         maven("https://buf.build/gen/maven")
+        maven("https://repo.simplecloud.app/snapshots")
     }
 }
 

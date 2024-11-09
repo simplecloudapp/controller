@@ -8,6 +8,7 @@ grpc = "1.61.0"
 grpcKotlin = "1.4.1"
 simpleCloudProtoSpecs = "1.4.1.1.20241108142018.a431612a8826"
 simpleCloudPubSub = "1.0.5"
+simplecloud-metrics = "1.0.0"
 jooq = "3.19.3"
 configurate = "4.1.2"
 sqliteJdbc = "3.44.1.0"
@@ -33,6 +34,7 @@ grpcNettyShaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 
 simpleCloudProtoSpecs = { module = "build.buf.gen:simplecloud_proto-specs_grpc_kotlin", version.ref = "simpleCloudProtoSpecs" }
 simpleCloudPubSub = { module = "app.simplecloud:simplecloud-pubsub", version.ref = "simpleCloudPubSub" }
+simplecloud-metrics = { module = "app.simplecloud:internal-metrics-api", version.ref = "simplecloud-metrics" }
 
 qooq = { module = "org.jooq:jooq-kotlin", version.ref = "jooq" }
 qooqMeta = { module = "org.jooq:jooq-meta", version.ref = "jooq" }
