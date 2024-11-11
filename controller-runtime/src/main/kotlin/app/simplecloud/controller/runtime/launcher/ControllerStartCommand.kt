@@ -49,7 +49,7 @@ class ControllerStartCommand(
     val authSecret: String by option(help = "Auth secret", envvar = "AUTH_SECRET_KEY")
         .defaultLazy { AuthFileSecretFactory.loadOrCreate(authSecretPath) }
 
-    val trackMetrics: Boolean by option(help = "Track metrics", envvar = "TRACK_METRICS")
+    private val trackMetrics: Boolean by option(help = "Track metrics", envvar = "TRACK_METRICS")
         .boolean()
         .default(true)
 
