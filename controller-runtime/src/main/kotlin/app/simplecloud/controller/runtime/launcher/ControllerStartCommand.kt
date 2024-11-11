@@ -2,6 +2,7 @@ package app.simplecloud.controller.runtime.launcher
 
 import app.simplecloud.controller.runtime.ControllerRuntime
 import app.simplecloud.controller.shared.secret.AuthFileSecretFactory
+import app.simplecloud.metrics.internal.api.MetricsCollector
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.parameters.options.default
