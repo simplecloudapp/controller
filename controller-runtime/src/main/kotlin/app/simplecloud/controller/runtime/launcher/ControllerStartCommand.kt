@@ -7,13 +7,16 @@ import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.defaultLazy
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.boolean
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.path
 import com.github.ajalt.clikt.sources.PropertiesValueSource
 import java.io.File
 import java.nio.file.Path
 
-class ControllerStartCommand : CliktCommand() {
+class ControllerStartCommand(
+    private val metricsCollector: MetricsCollector?
+)  : CliktCommand() {
 
     init {
         context {
@@ -45,8 +48,25 @@ class ControllerStartCommand : CliktCommand() {
     val authSecret: String by option(help = "Auth secret", envvar = "AUTH_SECRET_KEY")
         .defaultLazy { AuthFileSecretFactory.loadOrCreate(authSecretPath) }
 
+    val trackMetrics: Boolean by option(help = "Track metrics", envvar = "TRACK_METRICS")
+        .boolean()
+        .default(true)
+
+    private val forwardingSecretPath: Path by option(
+        help = "Path to the forwarding secret (default: .forwarding.secret)",
+        envvar = "FORWARDING_SECRET_PATH"
+    )
+        .path()
+        .default(Path.of(".secrets", "forwarding.secret"))
+
+    val forwardingSecret: String by option(help = "Forwarding secrewt", envvar = "FORWARDING_SECRET")
+        .defaultLazy { AuthFileSecretFactory.loadOrCreate(forwardingSecretPath) }
 
     override fun run() {
+        if (trackMetrics) {
+            metricsCollector?.start()
+        }
+
         val controllerRuntime = ControllerRuntime(this)
         controllerRuntime.start()
     }
