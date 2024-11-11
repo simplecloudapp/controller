@@ -45,15 +45,6 @@ class ControllerStartCommand : CliktCommand() {
     val authSecret: String by option(help = "Auth secret", envvar = "AUTH_SECRET_KEY")
         .defaultLazy { AuthFileSecretFactory.loadOrCreate(authSecretPath) }
 
-    private val forwardingSecretPath: Path by option(
-        help = "Path to the forwarding secret (default: .forwarding.secret)",
-        envvar = "FORWARDING_SECRET_PATH"
-    )
-        .path()
-        .default(Path.of(".secrets", "forwarding.secret"))
-
-    val forwardingSecret: String by option(help = "Forwarding secrewt", envvar = "FORWARDING_SECRET")
-        .defaultLazy { AuthFileSecretFactory.loadOrCreate(forwardingSecretPath) }
 
     override fun run() {
         val controllerRuntime = ControllerRuntime(this)
