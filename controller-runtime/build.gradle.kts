@@ -1,17 +1,20 @@
 plugins {
     application
-    alias(libs.plugins.jooqCodegen)
+    alias(libs.plugins.jooq.codegen)
+    java
 }
 
 dependencies {
     api(project(":controller-shared"))
-    api(rootProject.libs.bundles.jooq)
-    api(rootProject.libs.sqliteJdbc)
-    jooqCodegen(rootProject.libs.jooqMetaExtensions)
-    implementation(rootProject.libs.simplecloud.metrics)
-    implementation(rootProject.libs.bundles.log4j)
-    implementation(rootProject.libs.clikt)
-    implementation(rootProject.libs.spotifyCompletableFutures)
+    api(libs.bundles.jooq)
+    api(libs.sqlite.jdbc)
+    jooqCodegen(libs.jooq.meta.extensions)
+    implementation(libs.simplecloud.metrics)
+    implementation(libs.bundles.log4j)
+    implementation(libs.clikt)
+    implementation(libs.spotify.completablefutures)
+    implementation(libs.bundles.ktor)
+    implementation(libs.nimbus.jose.jwt)
 }
 
 application {

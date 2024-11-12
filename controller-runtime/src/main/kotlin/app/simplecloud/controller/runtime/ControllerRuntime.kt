@@ -5,6 +5,7 @@ import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.group.GroupService
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.runtime.launcher.ControllerStartCommand
+import app.simplecloud.controller.runtime.oauth.OAuthServer
 import app.simplecloud.controller.runtime.reconciler.Reconciler
 import app.simplecloud.controller.runtime.server.ServerNumericalIdRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
@@ -34,6 +35,7 @@ class ControllerRuntime(
     private val serverRepository = ServerRepository(database, numericalIdRepository)
     private val hostRepository = ServerHostRepository()
     private val pubSubService = PubSubService()
+    private val authServer = OAuthServer(controllerStartCommand, database)
     private val reconciler = Reconciler(
         groupRepository,
         serverRepository,
@@ -47,11 +49,21 @@ class ControllerRuntime(
 
     fun start() {
         setupDatabase()
+        startAuthServer()
         startPubSubGrpcServer()
         startGrpcServer()
         startReconciler()
         loadGroups()
         loadServers()
+    }
+
+    private fun startAuthServer() {
+        logger.info("Starting auth server...")
+        thread {
+            authServer.start()
+            logger.info("Auth server stopped.")
+        }
+
     }
 
     private fun setupDatabase() {
@@ -74,6 +86,7 @@ class ControllerRuntime(
         thread {
             server.start()
             server.awaitTermination()
+            logger.info("GRPC Server stopped.")
         }
     }
 
@@ -111,7 +124,11 @@ class ControllerRuntime(
                     hostRepository,
                     groupRepository,
                     authCallCredentials,
-                    PubSubClient(controllerStartCommand.grpcHost, controllerStartCommand.pubSubGrpcPort, authCallCredentials)
+                    PubSubClient(
+                        controllerStartCommand.grpcHost,
+                        controllerStartCommand.pubSubGrpcPort,
+                        authCallCredentials
+                    )
                 )
             )
             .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret))

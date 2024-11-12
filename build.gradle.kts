@@ -3,7 +3,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     alias(libs.plugins.kotlin)
     alias(libs.plugins.shadow)
-    alias(libs.plugins.sonatypeCentralPortalPublisher)
+    alias(libs.plugins.sonatype.central.portal.publisher)
     `maven-publish`
 }
 
@@ -29,8 +29,8 @@ subprojects {
     apply(plugin = "maven-publish")
 
     dependencies {
-        testImplementation(rootProject.libs.kotlinTest)
-        implementation(rootProject.libs.kotlinJvm)
+        testImplementation(rootProject.libs.kotlin.test)
+        implementation(rootProject.libs.kotlin.jvm)
     }
 
     publishing {

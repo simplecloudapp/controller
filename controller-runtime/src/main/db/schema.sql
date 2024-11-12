@@ -26,3 +26,19 @@ CREATE TABLE IF NOT EXISTS cloud_server_properties(
     value varchar,
     CONSTRAINT compound_key PRIMARY KEY (server_id, key)
 );
+
+CREATE TABLE IF NOT EXISTS oauth2_client_details(
+    client_id varchar PRIMARY KEY,
+    client_secret varchar,
+    redirect_uri varchar,
+    grant_types varchar,
+    scope varchar
+);
+
+CREATE TABLE IF NOT EXISTS oauth2_tokens(
+    token_id varchar PRIMARY KEY,
+    client_id varchar,
+    access_token varchar,
+    scope varchar,
+    expires_in timestamp
+)

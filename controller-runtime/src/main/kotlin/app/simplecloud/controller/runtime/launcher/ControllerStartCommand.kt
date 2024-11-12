@@ -17,7 +17,7 @@ import java.nio.file.Path
 
 class ControllerStartCommand(
     private val metricsCollector: MetricsCollector?
-)  : CliktCommand() {
+) : CliktCommand() {
 
     init {
         context {
@@ -38,6 +38,11 @@ class ControllerStartCommand(
 
     val pubSubGrpcPort: Int by option(help = "PubSub Grpc port (default: 5817)", envvar = "PUBSUB_GRPC_PORT").int()
         .default(5817)
+
+    val authorizationPort: Int by option(
+        help = "Authorization port (default: 5818)",
+        envvar = "AUTHORIZATION_PORT"
+    ).int().default(5818)
 
     private val authSecretPath: Path by option(
         help = "Path to auth secret file (default: .auth.secret)",
