@@ -174,6 +174,31 @@ class OAuthServer(private val args: ControllerStartCommand, database: Database) 
                         return@post
                     }
                 }
+
+                post("/introspect") {
+                    val params = call.receiveParameters()
+                    val token = params["token"]
+                    if (token == null) {
+                        call.respond(HttpStatusCode.BadRequest, "Token is missing")
+                        return@post
+                    }
+
+                    val authToken = tokenRepository.findByAccessToken(token)
+                    if (authToken == null) {
+                        call.respond(HttpStatusCode.OK, mapOf("active" to false))
+                        return@post
+                    }
+
+                    // If the token exists, respond with token details
+                    call.respond(
+                        mapOf(
+                            "active" to ((authToken.expiresIn ?: 1) > 0),
+                            "client_id" to authToken.clientId,
+                            "scope" to authToken.scope,
+                            "exp" to authToken.expiresIn,
+                        )
+                    )
+                }
             }
         }.start(wait = true)
     }
