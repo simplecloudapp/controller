@@ -12,6 +12,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.apache.logging.log4j.LogManager
 import java.util.*
 
 class OAuthServer(private val args: ControllerStartCommand, database: Database) {
@@ -152,7 +153,11 @@ class OAuthServer(private val args: ControllerStartCommand, database: Database) 
                                 scope = flowData[code]?.get(2)!!
                             )
                             tokenRepository.save(token)
-
+                            call.respond(mapOf(
+                                "access_token" to token.accessToken,
+                                "scope" to token.scope,
+                                "exp" to (token.expiresIn ?: -1),
+                            ))
                             return@post
                         }
                         call.respond(
@@ -168,6 +173,11 @@ class OAuthServer(private val args: ControllerStartCommand, database: Database) 
                             scope = client.scope ?: "*"
                         )
                         tokenRepository.save(token)
+                        call.respond(mapOf(
+                            "access_token" to token.accessToken,
+                            "scope" to token.scope,
+                            "exp" to (token.expiresIn ?: -1),
+                        ))
                         return@post
                     } else {
                         call.respond(HttpStatusCode.BadRequest, "Invalid client")
@@ -195,7 +205,7 @@ class OAuthServer(private val args: ControllerStartCommand, database: Database) 
                             "active" to ((authToken.expiresIn ?: 1) > 0),
                             "client_id" to authToken.clientId,
                             "scope" to authToken.scope,
-                            "exp" to authToken.expiresIn,
+                            "exp" to (authToken.expiresIn ?: -1),
                         )
                     )
                 }
