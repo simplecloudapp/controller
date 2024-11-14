@@ -17,6 +17,7 @@ sonatype-central-portal-publisher = "1.2.3"
 spotify-completablefutures = "0.3.6"
 ktor = "3.0.1"
 nimbus = "9.46"
+gson = "2.7"
 
 [libraries]
 kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
@@ -60,6 +61,8 @@ ktor-jackson = { module = "io.ktor:ktor-serialization-jackson", version.ref = "k
 ktor-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
 
 nimbus-jose-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus" }
+
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 
 
 

@@ -13,8 +13,6 @@ dependencies {
     implementation(libs.bundles.log4j)
     implementation(libs.clikt)
     implementation(libs.spotify.completablefutures)
-    implementation(libs.bundles.ktor)
-    implementation(libs.nimbus.jose.jwt)
 }
 
 application {

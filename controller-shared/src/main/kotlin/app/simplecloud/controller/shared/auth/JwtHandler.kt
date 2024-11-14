@@ -1,4 +1,4 @@
-package app.simplecloud.controller.runtime.oauth
+package app.simplecloud.controller.shared.auth
 
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
@@ -38,4 +38,7 @@ class JwtHandler(private val secret: String, private val issuer: String) {
         return signedJWT.verify(verifier)
     }
 
+    fun decodeJwt(token: String): SignedJWT {
+        return SignedJWT.parse(token)
+    }
 }

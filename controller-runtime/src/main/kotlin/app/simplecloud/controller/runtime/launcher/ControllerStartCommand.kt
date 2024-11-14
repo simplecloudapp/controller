@@ -16,7 +16,7 @@ import java.io.File
 import java.nio.file.Path
 
 class ControllerStartCommand(
-    private val metricsCollector: MetricsCollector?
+    //private val metricsCollector: MetricsCollector?
 ) : CliktCommand() {
 
     init {
@@ -60,7 +60,7 @@ class ControllerStartCommand(
 
     override fun run() {
         if (trackMetrics) {
-            metricsCollector?.start()
+            //metricsCollector?.start()
         }
 
         val controllerRuntime = ControllerRuntime(this)

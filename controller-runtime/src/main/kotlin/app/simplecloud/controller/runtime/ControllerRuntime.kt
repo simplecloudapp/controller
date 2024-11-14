@@ -131,14 +131,14 @@ class ControllerRuntime(
                     )
                 )
             )
-            .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret))
+            .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret, controllerStartCommand.grpcHost, controllerStartCommand.authorizationPort))
             .build()
     }
 
     private fun createPubSubGrpcServer(): Server {
         return ServerBuilder.forPort(controllerStartCommand.pubSubGrpcPort)
             .addService(pubSubService)
-            .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret))
+            .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret, controllerStartCommand.grpcHost, controllerStartCommand.authorizationPort))
             .build()
     }
 
