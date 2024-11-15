@@ -18,6 +18,7 @@ spotify-completablefutures = "0.3.6"
 ktor = "3.0.1"
 nimbus = "9.46"
 gson = "2.7"
+spring-crypto = "6.3.4"
 
 [libraries]
 kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
@@ -63,6 +64,8 @@ ktor-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation",
 nimbus-jose-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus" }
 
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+
+spring-crypto = { module = "org.springframework.security:spring-security-crypto", version.ref = "spring-crypto"}
 
 
 

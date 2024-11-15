@@ -5,15 +5,12 @@ import app.simplecloud.controller.runtime.launcher.ControllerStartCommand
 import app.simplecloud.controller.shared.auth.JwtHandler
 import app.simplecloud.controller.shared.auth.OAuthIntrospector
 import com.fasterxml.jackson.databind.SerializationFeature
-import com.nimbusds.jwt.JWTClaimsSet
-import io.ktor.client.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 class OAuthServer(private val args: ControllerStartCommand, database: Database) {
@@ -22,6 +19,8 @@ class OAuthServer(private val args: ControllerStartCommand, database: Database) 
     private val jwtHandler = JwtHandler(secret, issuer)
     private val pkceHandler = PKCEHandler()
     private val clientRepository = AuthClientRepository(database)
+    private val groupRepository = AuthGroupRepository(database)
+    private val userRepository = AuthUserRepository(database)
     private val tokenRepository = AuthTokenRepository(database)
 
     //code to client_id, code_challenge and scope (this is in memory because it is only in use temporary)
@@ -29,6 +28,8 @@ class OAuthServer(private val args: ControllerStartCommand, database: Database) 
 
     private val authorizationHandler =
         AuthorizationHandler(secret, clientRepository, tokenRepository, pkceHandler, jwtHandler, flowData)
+
+    private val authenticationHandler = AuthenticationHandler(groupRepository, userRepository, tokenRepository, jwtHandler)
 
     private val introspector = OAuthIntrospector(secret, issuer)
 
@@ -75,8 +76,42 @@ class OAuthServer(private val args: ControllerStartCommand, database: Database) 
                 // AUTHENTICATION
 
                 authenticate {
-                    get("/test_protection") {
-                        call.respond(call.principal<JWTClaimsSet>() ?: "Claims not found")
+                    // Save group endpoint
+                    put("/group") {
+                        authenticationHandler.saveGroup(call)
+                    }
+                    // Get group endpoint
+                    get("/group") {
+                        authenticationHandler.getGroup(call)
+                    }
+                    // Delete group endpoint
+                    delete("/group") {
+                        authenticationHandler.deleteGroup(call)
+                    }
+                    // Get all groups endpoint
+                    get("/groups") {
+                        authenticationHandler.getGroups(call)
+                    }
+
+                    put("/user") {
+                        authenticationHandler.saveUser(call)
+                    }
+
+                    get("/user") {
+                        authenticationHandler.getUser(call)
+                    }
+
+                    get("/users") {
+                        authenticationHandler.getUsers(call)
+                    }
+
+                    delete("/user") {
+                        authenticationHandler.deleteUser(call)
+                    }
+
+                    //Login endpoint
+                    post("/login") {
+                        authenticationHandler.login(call)
                     }
                 }
             }

@@ -12,6 +12,7 @@ dependencies {
     implementation(libs.simplecloud.metrics)
     implementation(libs.bundles.log4j)
     implementation(libs.clikt)
+    implementation(libs.spring.crypto)
     implementation(libs.spotify.completablefutures)
 }
 

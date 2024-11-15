@@ -14,17 +14,27 @@ class JwtHandler(private val secret: String, private val issuer: String) {
      * Generates a jwt token
      * @param subject the subject to sign
      * @param expiresIn time span in seconds or null if it should not expire
-     * @return the JWT token as a string
+     * @return the JWT token
      */
-    fun generateJwt(subject: String, expiresIn: Int? = null, scope: String = ""): String {
-        val signer = MACSigner(secret.toByteArray())
+    fun generateJwt(subject: String, expiresIn: Int? = null, scope: String = ""): SignedJWT {
         val claimsSet = JWTClaimsSet.Builder()
             .subject(subject)
             .claim("scope", scope)
             .issuer(issuer)
         if (expiresIn != null)
             claimsSet.expirationTime(Date(System.currentTimeMillis() + expiresIn * 1000L))
-        val signedJWT = SignedJWT(JWSHeader(JWSAlgorithm.HS256), claimsSet.build())
+        return SignedJWT(JWSHeader(JWSAlgorithm.HS256), claimsSet.build())
+    }
+
+    /**
+     * Generates a signed jwt token
+     * @param subject the subject to sign
+     * @param expiresIn time span in seconds or null if it should not expire
+     * @return the JWT token as a signed string
+     */
+    fun generateJwtSigned(subject: String, expiresIn: Int? = null, scope: String = ""): String {
+        val signer = MACSigner(secret.toByteArray())
+        val signedJWT = generateJwt(subject, expiresIn, scope)
         signedJWT.sign(signer)
         return signedJWT.serialize()
     }

@@ -13,16 +13,12 @@ import org.jooq.exception.DataAccessException
 
 class AuthGroupRepository(private val database: Database) : Repository<OAuthGroup, String> {
     override suspend fun getAll(): List<OAuthGroup> {
-        return database.context.selectFrom(OAUTH2_GROUPS)
-            .asFlow()
-            .toCollection(mutableListOf())
+        return database.context.selectFrom(OAUTH2_GROUPS).asFlow().toCollection(mutableListOf())
             .map { mapRecordToGroup(it) }
     }
 
     override suspend fun find(identifier: String): OAuthGroup? {
-        return database.context.selectFrom(OAUTH2_GROUPS)
-            .where(OAUTH2_GROUPS.GROUP_NAME.eq(identifier))
-            .limit(1)
+        return database.context.selectFrom(OAUTH2_GROUPS).where(OAUTH2_GROUPS.GROUP_NAME.eq(identifier)).limit(1)
             .awaitFirstOrNull()?.let { mapRecordToGroup(it) }
     }
 
@@ -30,23 +26,18 @@ class AuthGroupRepository(private val database: Database) : Repository<OAuthGrou
         database.context.insertInto(
             OAUTH2_GROUPS,
 
-            OAUTH2_GROUPS.GROUP_NAME,
-            OAUTH2_GROUPS.SCOPES
+            OAUTH2_GROUPS.GROUP_NAME, OAUTH2_GROUPS.SCOPES
         ).values(
             element.name,
             element.scopes.joinToString(";"),
-        ).onDuplicateKeyUpdate()
-            .set(OAUTH2_GROUPS.GROUP_NAME, element.name)
-            .set(OAUTH2_GROUPS.SCOPES, element.scopes.joinToString(";"))
-            .executeAsync()
+        ).onDuplicateKeyUpdate().set(OAUTH2_GROUPS.GROUP_NAME, element.name)
+            .set(OAUTH2_GROUPS.SCOPES, element.scopes.joinToString(";")).executeAsync()
     }
 
     override suspend fun delete(element: OAuthGroup): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                database.context.deleteFrom(OAUTH2_GROUPS)
-                    .where(OAUTH2_GROUPS.GROUP_NAME.eq(element.name))
-                    .execute()
+                database.context.deleteFrom(OAUTH2_GROUPS).where(OAUTH2_GROUPS.GROUP_NAME.eq(element.name)).execute()
                 return@withContext true
             } catch (e: DataAccessException) {
                 return@withContext false
@@ -54,10 +45,12 @@ class AuthGroupRepository(private val database: Database) : Repository<OAuthGrou
         }
     }
 
-    private fun mapRecordToGroup(record: Oauth2GroupsRecord): OAuthGroup {
-        return OAuthGroup(
-            scopes = record.scopes?.split(";") ?: emptyList(),
-            name = record.groupName!!,
-        )
+    companion object {
+        fun mapRecordToGroup(record: Oauth2GroupsRecord): OAuthGroup {
+            return OAuthGroup(
+                scopes = record.scopes?.split(";") ?: emptyList(),
+                name = record.groupName!!,
+            )
+        }
     }
 }

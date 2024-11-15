@@ -43,13 +43,13 @@ class AuthClientRepository(
             element.clientSecret,
             element.grantTypes,
             element.redirectUri,
-            element.scope,
+            element.scope.joinToString(";"),
         ).onDuplicateKeyUpdate()
             .set(OAUTH2_CLIENT_DETAILS.CLIENT_ID, element.clientId)
             .set(OAUTH2_CLIENT_DETAILS.CLIENT_SECRET, element.clientSecret)
             .set(OAUTH2_CLIENT_DETAILS.GRANT_TYPES, element.grantTypes)
             .set(OAUTH2_CLIENT_DETAILS.REDIRECT_URI, element.redirectUri)
-            .set(OAUTH2_CLIENT_DETAILS.SCOPE, element.scope)
+            .set(OAUTH2_CLIENT_DETAILS.SCOPE, element.scope.joinToString(";"))
             .executeAsync()
     }
 
@@ -72,7 +72,7 @@ class AuthClientRepository(
             clientSecret = record.clientSecret!!,
             grantTypes = record.grantTypes!!,
             redirectUri = record.redirectUri,
-            scope = record.scope,
+            scope = Scope.fromString(record.scope ?: "", ";"),
         )
     }
 }

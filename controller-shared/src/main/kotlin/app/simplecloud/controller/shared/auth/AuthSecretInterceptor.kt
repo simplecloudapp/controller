@@ -11,7 +11,11 @@ class AuthSecretInterceptor(
     authPort: Int,
 ) : ServerInterceptor {
 
-    private val oAuthIntrospector = OAuthIntrospector(secretKey, "http://$authHost:$authPort")
+    private val issuer = "http://$authHost:$authPort"
+
+    private val masterToken = JwtHandler(secretKey, issuer).generateJwt("internal", null, "*")
+
+    private val oAuthIntrospector = OAuthIntrospector(secretKey, issuer)
 
     override fun <ReqT : Any?, RespT : Any?> interceptCall(
         call: ServerCall<ReqT, RespT>,
@@ -25,8 +29,8 @@ class AuthSecretInterceptor(
         }
 
         if (this.secretKey == secretKey) {
-            headers.put(MetadataKeys.SCOPES, "*")
-            return Contexts.interceptCall(Context.current(), call, headers, next)
+            val forked = Context.current().withValue(MetadataKeys.CLAIMS, masterToken.jwtClaimsSet)
+            return Contexts.interceptCall(forked, call, headers, next)
         }
         return runBlocking {
             val oAuthResult = oAuthIntrospector.introspect(secretKey)
@@ -34,8 +38,8 @@ class AuthSecretInterceptor(
                 call.close(Status.UNAUTHENTICATED, headers)
                 return@runBlocking object : ServerCall.Listener<ReqT>() {}
             }
-            headers.put(MetadataKeys.SCOPES, oAuthResult.getClaim("scope").toString())
-            return@runBlocking Contexts.interceptCall(Context.current(), call, headers, next)
+            val forked = Context.current().withValue(MetadataKeys.CLAIMS, oAuthResult)
+            return@runBlocking Contexts.interceptCall(forked, call, headers, next)
         }
 
     }

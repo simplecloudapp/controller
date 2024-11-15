@@ -6,5 +6,5 @@ data class OAuthUser(
     val userId: String,
     val username: String,
     val hashedPassword: String,
-    val tokenId: String? = null,
+    val token: OAuthToken? = null,
 )

@@ -35,6 +35,13 @@ class AuthTokenRepository(private val database: Database): Repository<OAuthToken
             .awaitFirstOrNull()?.let { mapRecordToToken(it) }
     }
 
+    suspend fun findByUserId(userId: String): OAuthToken? {
+        return database.context.selectFrom(OAUTH2_TOKENS)
+            .where(OAUTH2_TOKENS.USER_ID.eq(userId))
+            .limit(1)
+            .awaitFirstOrNull()?.let { mapRecordToToken(it) }
+    }
+
     override fun save(element: OAuthToken) {
         database.context.insertInto(
             OAUTH2_TOKENS,
@@ -44,18 +51,21 @@ class AuthTokenRepository(private val database: Database): Repository<OAuthToken
             OAUTH2_TOKENS.SCOPE,
             OAUTH2_TOKENS.CLIENT_ID,
             OAUTH2_TOKENS.EXPIRES_IN,
+            OAUTH2_TOKENS.USER_ID,
         ).values(
             element.id,
             element.accessToken,
             element.scope,
             element.clientId,
-            if(element.expiresIn != null) LocalDateTime.now().plusSeconds(element.expiresIn.toLong()) else null
+            if(element.expiresIn != null) LocalDateTime.now().plusSeconds(element.expiresIn.toLong()) else null,
+            element.userId,
         ).onDuplicateKeyUpdate()
             .set(OAUTH2_TOKENS.TOKEN_ID, element.id)
             .set(OAUTH2_TOKENS.ACCESS_TOKEN, element.accessToken)
             .set(OAUTH2_TOKENS.SCOPE, element.scope)
             .set(OAUTH2_TOKENS.CLIENT_ID, element.clientId)
             .set(OAUTH2_TOKENS.EXPIRES_IN, if(element.expiresIn != null) LocalDateTime.now().plusSeconds(element.expiresIn.toLong()) else null)
+            .set(OAUTH2_TOKENS.USER_ID, element.userId)
             .executeAsync()
     }
 
@@ -72,13 +82,17 @@ class AuthTokenRepository(private val database: Database): Repository<OAuthToken
         }
     }
 
-    private fun mapRecordToToken(record: Oauth2TokensRecord): OAuthToken {
-        return OAuthToken(
-            id = record.tokenId!!,
-            scope = record.scope ?: "",
-            expiresIn = if(record.expiresIn != null) Duration.between(LocalDateTime.now(), record.expiresIn!!).toSeconds().toInt() else null,
-            accessToken = record.accessToken!!,
-            clientId = record.clientId!!,
-        )
+    companion object {
+        fun mapRecordToToken(record: Oauth2TokensRecord): OAuthToken {
+            return OAuthToken(
+                id = record.tokenId!!,
+                scope = record.scope ?: "",
+                expiresIn = if (record.expiresIn != null) Duration.between(LocalDateTime.now(), record.expiresIn!!)
+                    .toSeconds().toInt() else null,
+                accessToken = record.accessToken!!,
+                clientId = record.clientId,
+                userId = record.userId,
+            )
+        }
     }
 }

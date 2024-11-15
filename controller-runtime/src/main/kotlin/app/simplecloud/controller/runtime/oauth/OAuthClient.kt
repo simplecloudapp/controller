@@ -5,5 +5,5 @@ data class OAuthClient(
     val clientSecret: String,
     val redirectUri: String? = null,
     val grantTypes: String,
-    val scope: String? = null,
+    val scope: List<String> = emptyList(),
 )

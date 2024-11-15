@@ -41,9 +41,8 @@ CREATE TABLE IF NOT EXISTS oauth2_client_details
 CREATE TABLE IF NOT EXISTS oauth2_users
 (
     user_id         varchar PRIMARY KEY,
-    groups          varchar,
     scopes          varchar,
-    username        varchar NOT NULL,
+    username        varchar UNIQUE NOT NULL,
     hashed_password varchar NOT NULL
 );
 

@@ -16,12 +16,16 @@ class AuthorizationHandler(
     private val jwtHandler: JwtHandler,
     private val flowData: MutableMap<String, List<String>>
 ) {
-
     suspend fun registerClient(call: RoutingCall) {
         val params = call.receiveParameters()
         val providedMasterToken = params["master_token"]
         if (providedMasterToken != secret) {
             call.respond(HttpStatusCode.Forbidden, "Invalid master token")
+            return
+        }
+        val clientId = params["client_id"]
+        if(clientId == null) {
+            call.respond(HttpStatusCode.BadRequest, "Client id is required")
             return
         }
         val redirectUri = params["redirect_uri"]
@@ -30,9 +34,9 @@ class AuthorizationHandler(
             call.respond(HttpStatusCode.BadRequest, "Invalid grant_types")
             return
         }
-        val scope = params["scope"]
-        val clientId = "client-${UUID.randomUUID().toString().replace("-", "").substring(0, 8)}"
-        val clientSecret = "secret-${UUID.randomUUID().toString().replace("-", "")}"
+        val scope = Scope.fromString(params["scope"] ?: "")
+        val providedSecret = params["client_secret"]
+        val clientSecret = providedSecret ?: "secret-${UUID.randomUUID().toString().replace("-", "")}"
         val client = OAuthClient(clientId, clientSecret, redirectUri, grantTypes, scope)
         clientRepository.save(client)
         call.respond(mapOf("client_id" to clientId, "client_secret" to clientSecret))
@@ -74,7 +78,7 @@ class AuthorizationHandler(
             return
         }
 
-        if (client.scope != null && !client.scope.contains(scope)) {
+        if (!client.scope.contains(scope)) {
             call.respond(HttpStatusCode.BadRequest, "This scope is not supported by the client")
             return
         }
@@ -124,7 +128,7 @@ class AuthorizationHandler(
                 val token = OAuthToken(
                     id = UUID.randomUUID().toString(),
                     clientId = clientId,
-                    accessToken = jwtHandler.generateJwt(
+                    accessToken = jwtHandler.generateJwtSigned(
                         clientId,
                         expiresIn = 3600,
                         scope = flowData[code]?.get(2)!!
@@ -138,6 +142,8 @@ class AuthorizationHandler(
                         "access_token" to token.accessToken,
                         "scope" to token.scope,
                         "exp" to (token.expiresIn ?: -1),
+                        "user_id" to token.userId,
+                        "client_id" to token.clientId
                     )
                 )
                 return
@@ -148,11 +154,12 @@ class AuthorizationHandler(
             )
             return
         } else if (client.grantTypes.contains("client_credentials")) {
+            val scope = client.scope.ifEmpty { listOf("*") }
             val token = OAuthToken(
                 id = UUID.randomUUID().toString(),
                 clientId = clientId,
-                accessToken = jwtHandler.generateJwt(clientId, scope = client.scope ?: "*"),
-                scope = client.scope ?: "*"
+                accessToken = jwtHandler.generateJwtSigned(clientId, scope = scope.joinToString(" ")),
+                scope = scope.joinToString(" ")
             )
             tokenRepository.save(token)
             call.respond(
