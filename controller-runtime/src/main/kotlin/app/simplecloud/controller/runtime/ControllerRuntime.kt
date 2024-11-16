@@ -19,7 +19,6 @@ import io.grpc.Server
 import io.grpc.ServerBuilder
 import kotlinx.coroutines.*
 import org.apache.logging.log4j.LogManager
-import kotlin.concurrent.thread
 
 class ControllerRuntime(
     private val controllerStartCommand: ControllerStartCommand
@@ -45,13 +44,23 @@ class ControllerRuntime(
     private val server = createGrpcServer()
     private val pubSubServer = createPubSubGrpcServer()
 
-    fun start() {
+    suspend fun start() {
         setupDatabase()
         startPubSubGrpcServer()
         startGrpcServer()
         startReconciler()
         loadGroups()
         loadServers()
+
+        suspendCancellableCoroutine<Unit> { continuation ->
+            Runtime.getRuntime().addShutdownHook(Thread {
+                server.shutdown()
+                continuation.resume(Unit) { cause, _, _ ->
+                    logger.info("Server shutdown due to: $cause")
+                }
+            })
+        }
+
     }
 
     private fun setupDatabase() {
@@ -71,17 +80,27 @@ class ControllerRuntime(
 
     private fun startGrpcServer() {
         logger.info("Starting gRPC server...")
-        thread {
-            server.start()
-            server.awaitTermination()
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                server.start()
+                server.awaitTermination()
+            } catch (e: Exception) {
+                logger.error("Error in gRPC server", e)
+                throw e
+            }
         }
     }
 
     private fun startPubSubGrpcServer() {
         logger.info("Starting pubsub gRPC server...")
-        thread {
-            pubSubServer.start()
-            pubSubServer.awaitTermination()
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                pubSubServer.start()
+                pubSubServer.awaitTermination()
+            } catch (e: Exception) {
+                logger.error("Error in gRPC server", e)
+                throw e
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 package app.simplecloud.controller.runtime.launcher
 
 import app.simplecloud.metrics.internal.api.MetricsCollector
+import com.github.ajalt.clikt.command.main
 import org.apache.logging.log4j.LogManager
 
 
