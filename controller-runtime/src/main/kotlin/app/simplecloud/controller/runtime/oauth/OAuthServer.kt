@@ -31,7 +31,7 @@ class OAuthServer(private val args: ControllerStartCommand, database: Database) 
 
     private val authenticationHandler = AuthenticationHandler(groupRepository, userRepository, tokenRepository, jwtHandler)
 
-    private val introspector = OAuthIntrospector(secret, issuer)
+    private val introspector = OAuthIntrospector(issuer)
 
 
     fun start() {

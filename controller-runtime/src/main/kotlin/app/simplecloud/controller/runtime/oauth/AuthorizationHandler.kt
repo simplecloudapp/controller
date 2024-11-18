@@ -1,6 +1,7 @@
 package app.simplecloud.controller.runtime.oauth
 
 import app.simplecloud.controller.shared.auth.JwtHandler
+import app.simplecloud.controller.shared.auth.Scope
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -24,7 +25,7 @@ class AuthorizationHandler(
             return
         }
         val clientId = params["client_id"]
-        if(clientId == null) {
+        if (clientId == null) {
             call.respond(HttpStatusCode.BadRequest, "Client id is required")
             return
         }
@@ -205,7 +206,16 @@ class AuthorizationHandler(
             call.respond(HttpStatusCode.BadRequest, "Token is missing")
             return
         }
-
+        if (token == secret) {
+            call.respond(
+                mapOf(
+                    "active" to true,
+                    "scope" to "*",
+                    "exp" to -1,
+                ),
+            )
+            return
+        }
         val authToken = tokenRepository.findByAccessToken(token)
         if (authToken == null) {
             call.respond(HttpStatusCode.OK, mapOf("active" to false))

@@ -1,4 +1,4 @@
-package app.simplecloud.controller.runtime.oauth
+package app.simplecloud.controller.shared.auth
 
 object Scope {
 

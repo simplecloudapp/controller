@@ -20,7 +20,6 @@ import io.grpc.Server
 import io.grpc.ServerBuilder
 import kotlinx.coroutines.*
 import org.apache.logging.log4j.LogManager
-import kotlin.concurrent.thread
 
 class ControllerRuntime(
     private val controllerStartCommand: ControllerStartCommand
@@ -47,7 +46,7 @@ class ControllerRuntime(
     private val server = createGrpcServer()
     private val pubSubServer = createPubSubGrpcServer()
 
-    fun start() {
+    suspend fun start() {
         setupDatabase()
         startAuthServer()
         startPubSubGrpcServer()
@@ -55,13 +54,27 @@ class ControllerRuntime(
         startReconciler()
         loadGroups()
         loadServers()
+
+        suspendCancellableCoroutine<Unit> { continuation ->
+            Runtime.getRuntime().addShutdownHook(Thread {
+                server.shutdown()
+                continuation.resume(Unit) { cause, _, _ ->
+                    logger.info("Server shutdown due to: $cause")
+                }
+            })
+        }
     }
 
     private fun startAuthServer() {
         logger.info("Starting auth server...")
-        thread {
-            authServer.start()
-            logger.info("Auth server stopped.")
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                authServer.start()
+                logger.info("Auth server stopped.")
+            }catch (e: Exception) {
+                logger.error("Error in gRPC server", e)
+                throw e
+            }
         }
 
     }
@@ -83,18 +96,27 @@ class ControllerRuntime(
 
     private fun startGrpcServer() {
         logger.info("Starting gRPC server...")
-        thread {
-            server.start()
-            server.awaitTermination()
-            logger.info("GRPC Server stopped.")
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                server.start()
+                server.awaitTermination()
+            } catch (e: Exception) {
+                logger.error("Error in gRPC server", e)
+                throw e
+            }
         }
     }
 
     private fun startPubSubGrpcServer() {
         logger.info("Starting pubsub gRPC server...")
-        thread {
-            pubSubServer.start()
-            pubSubServer.awaitTermination()
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                pubSubServer.start()
+                pubSubServer.awaitTermination()
+            } catch (e: Exception) {
+                logger.error("Error in gRPC server", e)
+                throw e
+            }
         }
     }
 
@@ -131,14 +153,14 @@ class ControllerRuntime(
                     )
                 )
             )
-            .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret, controllerStartCommand.grpcHost, controllerStartCommand.authorizationPort))
+            .intercept(AuthSecretInterceptor(controllerStartCommand.grpcHost, controllerStartCommand.authorizationPort))
             .build()
     }
 
     private fun createPubSubGrpcServer(): Server {
         return ServerBuilder.forPort(controllerStartCommand.pubSubGrpcPort)
             .addService(pubSubService)
-            .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret, controllerStartCommand.grpcHost, controllerStartCommand.authorizationPort))
+            .intercept(AuthSecretInterceptor(controllerStartCommand.grpcHost, controllerStartCommand.authorizationPort))
             .build()
     }
 

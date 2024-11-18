@@ -2,6 +2,7 @@ package app.simplecloud.controller.runtime.oauth
 
 import app.simplecloud.controller.runtime.Repository
 import app.simplecloud.controller.runtime.database.Database
+import app.simplecloud.controller.shared.auth.Scope
 import app.simplecloud.controller.shared.db.tables.records.Oauth2UsersRecord
 import app.simplecloud.controller.shared.db.tables.references.OAUTH2_TOKENS
 import app.simplecloud.controller.shared.db.tables.references.OAUTH2_USERS

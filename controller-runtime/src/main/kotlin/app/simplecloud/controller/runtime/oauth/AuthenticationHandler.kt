@@ -1,6 +1,7 @@
 package app.simplecloud.controller.runtime.oauth
 
 import app.simplecloud.controller.shared.auth.JwtHandler
+import app.simplecloud.controller.shared.auth.Scope
 import com.nimbusds.jwt.JWTClaimsSet
 import io.ktor.http.*
 import io.ktor.server.request.*
@@ -126,16 +127,16 @@ class AuthenticationHandler(
             return
         }
         val user = userRepository.findByName(username)
-        if(user == null) {
+        if (user == null) {
             call.respond(HttpStatusCode.NotFound, "User not found")
             return
         }
         call.respond(mapOf(
-                "user_id" to user.userId,
-                "username" to user.username,
-                "scope" to user.scopes.joinToString(" "),
-                "groups" to user.groups.joinToString(" ") { group -> group.name }
-            ))
+            "user_id" to user.userId,
+            "username" to user.username,
+            "scope" to user.scopes.joinToString(" "),
+            "groups" to user.groups.joinToString(" ") { group -> group.name }
+        ))
     }
 
     suspend fun getUsers(call: RoutingCall) {

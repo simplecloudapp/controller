@@ -2,6 +2,7 @@ package app.simplecloud.controller.runtime.oauth
 
 import app.simplecloud.controller.runtime.Repository
 import app.simplecloud.controller.runtime.database.Database
+import app.simplecloud.controller.shared.auth.Scope
 import app.simplecloud.controller.shared.db.tables.records.Oauth2ClientDetailsRecord
 import app.simplecloud.controller.shared.db.tables.references.OAUTH2_CLIENT_DETAILS
 import kotlinx.coroutines.Dispatchers

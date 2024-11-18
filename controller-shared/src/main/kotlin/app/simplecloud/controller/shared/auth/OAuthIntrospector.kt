@@ -2,18 +2,21 @@ package app.simplecloud.controller.shared.auth
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.google.gson.stream.JsonWriter
 import com.nimbusds.jwt.JWTClaimsSet
 import io.ktor.client.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 
-class OAuthIntrospector(secret: String, private val issuer: String) {
+class OAuthIntrospector(private val issuer: String) {
     private val client = HttpClient()
-    private val jwtHandler = JwtHandler(secret, issuer)
     private val gson = Gson()
 
-    suspend fun introspect(token: String): JWTClaimsSet? {
+    /**
+     * @return list of all scopes issued to this token, or null if the token does not exist
+     */
+    suspend fun introspect(token: String): List<String>? {
         try {
             val response = client.submitForm(
                 url = "$issuer/oauth/introspect",
@@ -25,7 +28,7 @@ class OAuthIntrospector(secret: String, private val issuer: String) {
             return if (!response.status.isSuccess() || !body["active"].asBoolean) {
                 null
             } else {
-                jwtHandler.decodeJwt(token).jwtClaimsSet
+                Scope.fromString(body["scope"].asString)
             }
         }catch (e: Exception) {
             return null
