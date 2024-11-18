@@ -95,7 +95,7 @@ class AuthenticationHandler(
             return
         }
         val params = call.receiveParameters()
-        val username = params["user_name"]
+        val username = params["username"]
         val password = params["password"]
         val groups = (params["groups"] ?: "").split(" ")
         val scope = Scope.fromString(params["scope"] ?: "")
@@ -175,7 +175,7 @@ class AuthenticationHandler(
 
     suspend fun login(call: RoutingCall) {
         val params = call.receiveParameters()
-        val username = params["user_name"]
+        val username = params["username"]
         val password = params["password"]
         if (username == null || password == null) {
             call.respond(HttpStatusCode.BadRequest, "You must specify a username and password")
