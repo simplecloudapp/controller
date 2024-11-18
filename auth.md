@@ -3,6 +3,25 @@ This documentation provides docs for every authorization server endpoint.
 Internally by the controller and every official droplet, auth tokens are used for authentication. No GRPC request
 with invalid auth token is possible.
 
+# Scoping
+Scoping is our way to deal with permissions. Scopes are represented in a string, seperated by a whitespace.
+They can also be wildcarded (`*`).
+
+**These scopes:**
+  - `test.*`
+  - `other.test`
+
+**will be passed as:** `test.* other.test` on auth server rest endpoints.
+
+The scope `*` will grant every permission.
+
+# Getting scopes in a GRPC context
+You can get the scopes that are provided to the current context (but ony if this context uses the v3 controllers `AuthSecretInterceptor`) like this:
+
+```kt
+val scopes = MetadataKeys.SCOPES.get() // List<String>
+```
+
 # Restricted endpoints
 For some endpoints, there are listed authorization scope requirements.
 To access these endpoints, you must pass a token in the Authorization header that meets these requirements.
