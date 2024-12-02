@@ -4,8 +4,8 @@ Internally by the controller and every official droplet, auth tokens are used fo
 with invalid auth token is possible.
 
 # Scoping
-Scoping is our way to deal with permissions. Scopes are represented in a string, seperated by a whitespace.
-They can also be wildcarded (`*`).
+Scoping is the OAuth way to deal with permissions. Scopes are represented in a string, seperated by a whitespace.
+In our case, they can also be wildcarded (`*`).
 
 **These scopes:**
   - `test.*`
