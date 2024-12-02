@@ -56,6 +56,11 @@ class OAuthServer(private val args: ControllerStartCommand, database: Database) 
                 post("/oauth/register_client") {
                     authorizationHandler.registerClient(call)
                 }
+
+                // Client retrieval endpoint
+                get("/oauth/client") {
+                    authorizationHandler.getClient(call)
+                }
                 // Authorization endpoint (simulating authorization code flow)
                 post("/oauth/authorize") {
                     authorizationHandler.authorizeRequest(call)

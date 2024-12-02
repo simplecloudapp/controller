@@ -3,7 +3,6 @@ package app.simplecloud.controller.runtime.oauth
 import app.simplecloud.controller.shared.auth.JwtHandler
 import app.simplecloud.controller.shared.auth.Scope
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -40,10 +39,55 @@ class AuthorizationHandler(
         val clientSecret = providedSecret ?: "secret-${UUID.randomUUID().toString().replace("-", "")}"
         val client = OAuthClient(clientId, clientSecret, redirectUri, grantTypes, scope)
         clientRepository.save(client)
-        call.respond(mapOf("client_id" to clientId, "client_secret" to clientSecret))
+        call.respond(
+            mapOf(
+                "client_id" to clientId,
+                "client_secret" to clientSecret,
+                "scope" to client.scope.joinToString(" "),
+                "grant_types" to client.grantTypes,
+                "redirect_uri" to client.redirectUri,
+            )
+        )
     }
 
-    suspend fun authorizeRequest(call: ApplicationCall) {
+    suspend fun getClient(call: RoutingCall) {
+        val params = call.receiveParameters()
+        val clientId = params["client_id"]
+        if (clientId == null) {
+            call.respond(HttpStatusCode.BadRequest, "You must provide a valid client_id")
+            return
+        }
+        val masterToken = params["master_token"]
+        val clientSecret = params["client_secret"]
+        if (masterToken == null && clientSecret == null) {
+            call.respond(HttpStatusCode.BadRequest, "You must provide either a valid master_token or client_secret")
+            return
+        }
+        if (masterToken != null && secret != masterToken) {
+            call.respond(HttpStatusCode.BadRequest, "You must provide either a valid master_token or client_secret")
+            return
+        }
+        val client = clientRepository.find(clientId)
+        if (client == null) {
+            call.respond(HttpStatusCode.BadRequest, "You must provide a valid client_id")
+            return
+        }
+        if (masterToken == null && client.clientSecret != clientSecret) {
+            call.respond(HttpStatusCode.BadRequest, "You must provide either a valid master_token or client_secret")
+            return
+        }
+        call.respond(
+            mapOf(
+                "client_id" to clientId,
+                "client_secret" to clientSecret,
+                "scope" to client.scope.joinToString(" "),
+                "grant_types" to client.grantTypes,
+                "redirect_uri" to client.redirectUri,
+            )
+        )
+    }
+
+    suspend fun authorizeRequest(call: RoutingCall) {
         val params = call.receiveParameters()
         val clientId = params["client_id"]
         val redirectUri = params["redirect_uri"]
@@ -89,7 +133,7 @@ class AuthorizationHandler(
         call.respond(mapOf("redirectUri" to "$redirectUri?code=$authorizationCode"))
     }
 
-    suspend fun tokenRequest(call: ApplicationCall) {
+    suspend fun tokenRequest(call: RoutingCall) {
         val params = call.receiveParameters()
         val clientId = params["client_id"]
         val clientSecret = params["client_secret"]
@@ -199,7 +243,7 @@ class AuthorizationHandler(
 
     }
 
-    suspend fun introspectRequest(call: ApplicationCall) {
+    suspend fun introspectRequest(call: RoutingCall) {
         val params = call.receiveParameters()
         val token = params["token"]
         if (token == null) {
