@@ -4,7 +4,7 @@ import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.runtime.server.ServerNumericalIdRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
-import app.simplecloud.controller.shared.auth.AuthCallCredentials
+import app.simplecloud.droplet.api.auth.AuthCallCredentials
 import build.buf.gen.simplecloud.controller.v1.ControllerServerServiceGrpc
 import io.grpc.ManagedChannel
 

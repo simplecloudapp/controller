@@ -1,9 +1,9 @@
 package app.simplecloud.controller.api.impl.future
 
 import app.simplecloud.controller.api.GroupApi
-import app.simplecloud.controller.shared.auth.AuthCallCredentials
-import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
+import app.simplecloud.droplet.api.auth.AuthCallCredentials
+import app.simplecloud.droplet.api.future.toCompletable
 import build.buf.gen.simplecloud.controller.v1.ControllerGroupServiceGrpc
 import build.buf.gen.simplecloud.controller.v1.CreateGroupRequest
 import build.buf.gen.simplecloud.controller.v1.DeleteGroupByNameRequest

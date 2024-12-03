@@ -3,7 +3,7 @@ package app.simplecloud.controller.api.impl.coroutines
 import app.simplecloud.controller.api.ControllerApi
 import app.simplecloud.controller.api.GroupApi
 import app.simplecloud.controller.api.ServerApi
-import app.simplecloud.controller.shared.auth.AuthCallCredentials
+import app.simplecloud.droplet.api.auth.AuthCallCredentials
 import app.simplecloud.pubsub.PubSubClient
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder

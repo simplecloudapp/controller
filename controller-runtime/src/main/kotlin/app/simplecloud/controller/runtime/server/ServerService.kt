@@ -2,11 +2,11 @@ package app.simplecloud.controller.runtime.server
 
 import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostRepository
-import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.host.ServerHost
 import app.simplecloud.controller.shared.server.Server
-import app.simplecloud.controller.shared.time.ProtoBufTimestamp
+import app.simplecloud.droplet.api.auth.AuthCallCredentials
+import app.simplecloud.droplet.api.time.ProtobufTimestamp
 import app.simplecloud.pubsub.PubSubClient
 import build.buf.gen.simplecloud.controller.v1.*
 import io.grpc.Status
@@ -86,7 +86,7 @@ class ServerService(
                 pubSubClient.publish(
                     "event",
                     ServerUpdateEvent.newBuilder()
-                        .setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                        .setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                         .setServerBefore(before.toDefinition()).setServerAfter(request.server).build()
                 )
                 serverRepository.save(server)
@@ -111,7 +111,7 @@ class ServerService(
             pubSubClient.publish(
                 "event", ServerStopEvent.newBuilder()
                     .setServer(request.server)
-                    .setStoppedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setStoppedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                     .setStopCause(ServerStopCause.NATURAL_STOP)
                     .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
                     .build()
@@ -148,7 +148,7 @@ class ServerService(
             pubSubClient.publish(
                 "event", ServerStartEvent.newBuilder()
                     .setServer(server)
-                    .setStartedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setStartedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                     .setStartCause(request.startCause)
                     .build()
             )
@@ -191,8 +191,8 @@ class ServerService(
                 .setMaximumMemory(group.maxMemory)
                 .setServerState(ServerState.PREPARING)
                 .setMaxPlayers(group.maxPlayers)
-                .setCreatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
-                .setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                .setCreatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                .setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                 .setPlayerCount(0)
                 .setUniqueId(UUID.randomUUID().toString().replace("-", "")).putAllCloudProperties(
                     mapOf(
@@ -224,7 +224,7 @@ class ServerService(
             pubSubClient.publish(
                 "event", ServerStopEvent.newBuilder()
                     .setServer(stopped)
-                    .setStoppedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setStoppedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                     .setStopCause(cause)
                     .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
                     .build()
@@ -245,7 +245,7 @@ class ServerService(
         serverRepository.save(server)
         pubSubClient.publish(
             "event",
-            ServerUpdateEvent.newBuilder().setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+            ServerUpdateEvent.newBuilder().setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                 .setServerBefore(serverBefore.toDefinition()).setServerAfter(server.toDefinition()).build()
         )
         return server.toDefinition()
@@ -259,7 +259,7 @@ class ServerService(
         serverRepository.save(server)
         pubSubClient.publish(
             "event",
-            ServerUpdateEvent.newBuilder().setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+            ServerUpdateEvent.newBuilder().setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                 .setServerBefore(serverBefore.toDefinition()).setServerAfter(server.toDefinition()).build()
         )
         return server.toDefinition()

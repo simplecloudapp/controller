@@ -3,9 +3,9 @@ package app.simplecloud.controller.runtime.reconciler
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.runtime.server.ServerNumericalIdRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
-import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import app.simplecloud.controller.shared.server.Server
+import app.simplecloud.droplet.api.future.toCompletable
 import build.buf.gen.simplecloud.controller.v1.*
 import build.buf.gen.simplecloud.controller.v1.ControllerServerServiceGrpc.ControllerServerServiceFutureStub
 import kotlinx.coroutines.runBlocking

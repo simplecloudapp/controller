@@ -1,11 +1,11 @@
 package app.simplecloud.controller.api.impl.future
 
 import app.simplecloud.controller.api.ServerApi
-import app.simplecloud.controller.shared.auth.AuthCallCredentials
-import app.simplecloud.controller.shared.future.toCompletable
 import app.simplecloud.controller.shared.group.Group
 import build.buf.gen.simplecloud.controller.v1.*
 import app.simplecloud.controller.shared.server.Server
+import app.simplecloud.droplet.api.auth.AuthCallCredentials
+import app.simplecloud.droplet.api.future.toCompletable
 import io.grpc.ManagedChannel
 import java.util.concurrent.CompletableFuture
 
