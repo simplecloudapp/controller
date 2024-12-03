@@ -11,11 +11,17 @@ suspend fun main(args: Array<String>) {
     } catch (e: Exception) {
         null
     }
-    configureLog4j(metricsCollector)
-    ControllerStartCommand(metricsCollector).main(args)
+    configureLog4j(
+        metricsCollector
+    )
+    ControllerStartCommand(
+        metricsCollector
+    ).main(args)
 }
 
-fun configureLog4j(metricsCollector: MetricsCollector?) {
+fun configureLog4j(
+    metricsCollector: MetricsCollector?
+) {
     val globalExceptionHandlerLogger = LogManager.getLogger("GlobalExceptionHandler")
     Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
         metricsCollector?.recordError(throwable)

@@ -5,12 +5,13 @@ import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.group.GroupService
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.runtime.launcher.ControllerStartCommand
+import app.simplecloud.controller.runtime.oauth.OAuthServer
 import app.simplecloud.controller.runtime.reconciler.Reconciler
 import app.simplecloud.controller.runtime.server.ServerNumericalIdRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.runtime.server.ServerService
-import app.simplecloud.controller.shared.auth.AuthCallCredentials
-import app.simplecloud.controller.shared.auth.AuthSecretInterceptor
+import app.simplecloud.droplet.api.auth.AuthCallCredentials
+import app.simplecloud.droplet.api.auth.AuthSecretInterceptor
 import app.simplecloud.pubsub.PubSubClient
 import app.simplecloud.pubsub.PubSubService
 import io.grpc.ManagedChannel
@@ -33,6 +34,7 @@ class ControllerRuntime(
     private val serverRepository = ServerRepository(database, numericalIdRepository)
     private val hostRepository = ServerHostRepository()
     private val pubSubService = PubSubService()
+    private val authServer = OAuthServer(controllerStartCommand, database)
     private val reconciler = Reconciler(
         groupRepository,
         serverRepository,
@@ -46,6 +48,7 @@ class ControllerRuntime(
 
     suspend fun start() {
         setupDatabase()
+        startAuthServer()
         startPubSubGrpcServer()
         startGrpcServer()
         startReconciler()
@@ -59,6 +62,19 @@ class ControllerRuntime(
                     logger.info("Server shutdown due to: $cause")
                 }
             })
+        }
+    }
+
+    private fun startAuthServer() {
+        logger.info("Starting auth server...")
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                authServer.start()
+                logger.info("Auth server stopped.")
+            } catch (e: Exception) {
+                logger.error("Error in gRPC server", e)
+                throw e
+            }
         }
 
     }
@@ -130,17 +146,21 @@ class ControllerRuntime(
                     hostRepository,
                     groupRepository,
                     authCallCredentials,
-                    PubSubClient(controllerStartCommand.grpcHost, controllerStartCommand.pubSubGrpcPort, authCallCredentials)
+                    PubSubClient(
+                        controllerStartCommand.grpcHost,
+                        controllerStartCommand.pubSubGrpcPort,
+                        authCallCredentials
+                    )
                 )
             )
-            .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret))
+            .intercept(AuthSecretInterceptor(controllerStartCommand.grpcHost, controllerStartCommand.authorizationPort))
             .build()
     }
 
     private fun createPubSubGrpcServer(): Server {
         return ServerBuilder.forPort(controllerStartCommand.pubSubGrpcPort)
             .addService(pubSubService)
-            .intercept(AuthSecretInterceptor(controllerStartCommand.authSecret))
+            .intercept(AuthSecretInterceptor(controllerStartCommand.grpcHost, controllerStartCommand.authorizationPort))
             .build()
     }
 
