@@ -1,7 +1,6 @@
 package app.simplecloud.controller.runtime.oauth
 
-import app.simplecloud.controller.shared.auth.JwtHandler
-import app.simplecloud.controller.shared.auth.Scope
+import app.simplecloud.droplet.api.auth.*
 import com.nimbusds.jwt.JWTClaimsSet
 import io.ktor.http.*
 import io.ktor.server.request.*
@@ -191,7 +190,7 @@ class AuthenticationHandler(
             return
         }
         val token = tokenRepository.findByUserId(user.userId)
-        if (token?.expiresIn != null && token.expiresIn > 0) {
+        if (token?.expiresIn != null && token.expiresIn!! > 0) {
             call.respond(
                 mapOf(
                     "access_token" to token.accessToken,

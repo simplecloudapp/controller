@@ -10,8 +10,8 @@ import app.simplecloud.controller.runtime.reconciler.Reconciler
 import app.simplecloud.controller.runtime.server.ServerNumericalIdRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.runtime.server.ServerService
-import app.simplecloud.controller.shared.auth.AuthCallCredentials
-import app.simplecloud.controller.shared.auth.AuthSecretInterceptor
+import app.simplecloud.droplet.api.auth.AuthCallCredentials
+import app.simplecloud.droplet.api.auth.AuthSecretInterceptor
 import app.simplecloud.pubsub.PubSubClient
 import app.simplecloud.pubsub.PubSubService
 import io.grpc.ManagedChannel
@@ -71,7 +71,7 @@ class ControllerRuntime(
             try {
                 authServer.start()
                 logger.info("Auth server stopped.")
-            }catch (e: Exception) {
+            } catch (e: Exception) {
                 logger.error("Error in gRPC server", e)
                 throw e
             }

@@ -4,6 +4,7 @@ import app.simplecloud.controller.runtime.Repository
 import app.simplecloud.controller.runtime.database.Database
 import app.simplecloud.controller.shared.db.tables.records.Oauth2GroupsRecord
 import app.simplecloud.controller.shared.db.tables.references.OAUTH2_GROUPS
+import app.simplecloud.droplet.api.auth.OAuthGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.reactive.asFlow

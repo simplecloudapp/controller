@@ -2,8 +2,8 @@ package app.simplecloud.controller.runtime.oauth
 
 import app.simplecloud.controller.runtime.database.Database
 import app.simplecloud.controller.runtime.launcher.ControllerStartCommand
-import app.simplecloud.controller.shared.auth.JwtHandler
-import app.simplecloud.controller.shared.auth.OAuthIntrospector
+import app.simplecloud.droplet.api.auth.JwtHandler
+import app.simplecloud.droplet.api.auth.OAuthIntrospector
 import com.fasterxml.jackson.databind.SerializationFeature
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -29,7 +29,8 @@ class OAuthServer(private val args: ControllerStartCommand, database: Database) 
     private val authorizationHandler =
         AuthorizationHandler(secret, clientRepository, tokenRepository, pkceHandler, jwtHandler, flowData)
 
-    private val authenticationHandler = AuthenticationHandler(groupRepository, userRepository, tokenRepository, jwtHandler)
+    private val authenticationHandler =
+        AuthenticationHandler(groupRepository, userRepository, tokenRepository, jwtHandler)
 
     private val introspector = OAuthIntrospector(issuer)
 

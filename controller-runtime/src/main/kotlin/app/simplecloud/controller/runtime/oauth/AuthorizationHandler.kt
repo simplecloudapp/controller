@@ -1,7 +1,9 @@
 package app.simplecloud.controller.runtime.oauth
 
-import app.simplecloud.controller.shared.auth.JwtHandler
-import app.simplecloud.controller.shared.auth.Scope
+import app.simplecloud.droplet.api.auth.JwtHandler
+import app.simplecloud.droplet.api.auth.OAuthClient
+import app.simplecloud.droplet.api.auth.OAuthToken
+import app.simplecloud.droplet.api.auth.Scope
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
