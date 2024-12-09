@@ -70,7 +70,6 @@ class ControllerRuntime(
         CoroutineScope(Dispatchers.Default).launch {
             try {
                 authServer.start()
-                logger.info("Auth server stopped.")
             } catch (e: Exception) {
                 logger.error("Error in gRPC server", e)
                 throw e
