@@ -3,10 +3,7 @@ kotlin = "2.0.20"
 kotlin-coroutines = "1.9.0"
 shadow = "8.3.3"
 log4j = "2.20.0"
-protobuf = "3.25.2"
-grpc = "1.61.0"
-grpc-kotlin = "1.4.1"
-droplet-api = "0.0.1-dev.66efe83"
+droplet-api = "0.0.1-dev.27d7043"
 simplecloud-pubsub = "1.0.5"
 simplecloud-metrics = "1.0.0"
 jooq = "3.19.3"
@@ -15,9 +12,6 @@ sqlite-jdbc = "3.44.1.0"
 clikt = "5.0.1"
 sonatype-central-portal-publisher = "1.2.3"
 spotify-completablefutures = "0.3.6"
-ktor = "3.0.1"
-nimbus = "9.46"
-gson = "2.7"
 spring-crypto = "6.3.4"
 
 [libraries]
@@ -29,12 +23,6 @@ log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "lo
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-slf4j = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
 
-protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
-
-grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
-grpc-kotlin-stub = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpc-kotlin" }
-grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
-grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 
 simplecloud-droplet-api = { module = "app.simplecloud.droplet.api:droplet-api", version.ref = "droplet-api" }
 simplecloud-pubsub = { module = "app.simplecloud:simplecloud-pubsub", version.ref = "simplecloud-pubsub" }
@@ -54,17 +42,6 @@ clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
 
 spotify-completablefutures = { module = "com.spotify:completable-futures", version.ref = "spotify-completablefutures" }
 
-ktor-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
-ktor-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
-ktor-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }
-ktor-auth-jwt = { module = "io.ktor:ktor-server-auth-jwt", version.ref = "ktor" }
-ktor-jackson = { module = "io.ktor:ktor-serialization-jackson", version.ref = "ktor" }
-ktor-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
-
-nimbus-jose-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus" }
-
-gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
-
 spring-crypto = { module = "org.springframework.security:spring-security-crypto", version.ref = "spring-crypto"}
 
 
@@ -75,13 +52,6 @@ log4j = [
     "log4j-api",
     "log4j-slf4j"
 ]
-proto = [
-    "protobuf-kotlin",
-    "grpc-stub",
-    "grpc-kotlin-stub",
-    "grpc-protobuf",
-    "grpc-netty-shaded",
-]
 jooq = [
     "jooq",
     "jooq-meta",
@@ -90,14 +60,6 @@ jooq = [
 configurate = [
     "configurate-yaml",
     "configurate-extra-kotlin"
-]
-ktor = [
-    "ktor-core",
-    "ktor-netty",
-    "ktor-auth",
-    "ktor-auth-jwt",
-    "ktor-content-negotiation",
-    "ktor-jackson"
 ]
 
 [plugins]
