@@ -101,7 +101,7 @@ abstract class YamlDirectoryRepository<E, I>(
             StandardWatchEventKinds.ENTRY_MODIFY
         )
 
-        return CoroutineScope(Dispatchers.Default).launch {
+        return CoroutineScope(Dispatchers.IO).launch {
             while (isActive) {
                 val key = watchService.take()
                 for (event in key.pollEvents()) {

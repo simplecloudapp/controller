@@ -47,6 +47,7 @@ class ControllerRuntime(
     private val pubSubServer = createPubSubGrpcServer()
 
     suspend fun start() {
+        logger.info("Starting controller")
         setupDatabase()
         startAuthServer()
         startPubSubGrpcServer()
@@ -67,7 +68,7 @@ class ControllerRuntime(
 
     private fun startAuthServer() {
         logger.info("Starting auth server...")
-        CoroutineScope(Dispatchers.Default).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 authServer.start()
             } catch (e: Exception) {
@@ -95,7 +96,7 @@ class ControllerRuntime(
 
     private fun startGrpcServer() {
         logger.info("Starting gRPC server...")
-        CoroutineScope(Dispatchers.Default).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 server.start()
                 server.awaitTermination()
@@ -108,7 +109,7 @@ class ControllerRuntime(
 
     private fun startPubSubGrpcServer() {
         logger.info("Starting pubsub gRPC server...")
-        CoroutineScope(Dispatchers.Default).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 pubSubServer.start()
                 pubSubServer.awaitTermination()
@@ -170,7 +171,7 @@ class ControllerRuntime(
     }
 
     private fun startReconcilerJob(): Job {
-        return CoroutineScope(Dispatchers.Default).launch {
+        return CoroutineScope(Dispatchers.IO).launch {
             while (isActive) {
                 reconciler.reconcile()
                 delay(2000L)
