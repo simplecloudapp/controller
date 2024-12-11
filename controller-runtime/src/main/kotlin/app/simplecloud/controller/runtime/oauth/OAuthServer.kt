@@ -121,6 +121,6 @@ class OAuthServer(private val args: ControllerStartCommand, database: Database) 
                     }
                 }
             }
-        }.start(wait = false)
+        }.start(wait = true)
     }
 }
