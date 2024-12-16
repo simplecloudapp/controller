@@ -29,14 +29,12 @@ class ControllerDropletService(private val dropletRepository: DropletRepository)
     }
 
     override suspend fun registerDroplet(request: RegisterDropletRequest): RegisterDropletResponse {
-        dropletRepository.find(request.definition.type, request.definition.id)
-            ?: throw StatusException(Status.NOT_FOUND.withDescription("This Droplet does not exist"))
         val droplet = Droplet.fromDefinition(request.definition)
-
         try {
+            dropletRepository.delete(droplet)
             dropletRepository.save(droplet)
         } catch (e: Exception) {
-            throw StatusException(Status.INTERNAL.withDescription("Error whilst updating Droplet").withCause(e))
+            throw StatusException(Status.INTERNAL.withDescription("Error whilst registering Droplet").withCause(e))
         }
         return registerDropletResponse { this.definition = droplet.toDefinition() }
     }
