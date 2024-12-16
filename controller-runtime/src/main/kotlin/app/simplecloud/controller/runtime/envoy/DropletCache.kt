@@ -54,8 +54,8 @@ class DropletCache(private val dropletRepository: DropletRepository) {
                 clusters,
                 clas,
                 listeners,
-                listOf(), //I think we don't have to configure routes
-                listOf(), //TODO: We don't yet need secrets, but definitely in the future
+                listOf(), // We don't need routes
+                listOf(), // We don't need secrets
                 UUID.randomUUID()
                     .toString() //This can be anything, used internally for versioning. THIS HAS TO BE DIFFERENT FOR EVERY SNAPSHOT
             )
