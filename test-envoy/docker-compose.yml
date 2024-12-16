@@ -1,10 +1,6 @@
 services:
   envoy:
     network_mode: "host"
-    image: envoyproxy/envoy:v1.28.0
-    ports:
-      - "8080:8080"
+    image: envoyproxy/envoy:v1.31.4
     volumes:
       - ./envoy-bootstrap.yaml:/etc/envoy/envoy.yaml
-    environment:
-      - loglevel=debug
