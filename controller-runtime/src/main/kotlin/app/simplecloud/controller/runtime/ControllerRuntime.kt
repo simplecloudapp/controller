@@ -3,6 +3,7 @@ package app.simplecloud.controller.runtime
 import app.simplecloud.controller.runtime.database.DatabaseFactory
 import app.simplecloud.controller.runtime.droplet.ControllerDropletService
 import app.simplecloud.controller.runtime.droplet.DropletRepository
+import app.simplecloud.controller.runtime.envoy.ControlPlaneServer
 import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.group.GroupService
 import app.simplecloud.controller.runtime.host.ServerHostRepository
@@ -37,6 +38,7 @@ class ControllerRuntime(
     private val serverRepository = ServerRepository(database, numericalIdRepository)
     private val hostRepository = ServerHostRepository()
     private val pubSubService = PubSubService()
+    private val controlPlaneServer = ControlPlaneServer(controllerStartCommand, dropletRepository)
     private val authServer = OAuthServer(controllerStartCommand, database)
     private val reconciler = Reconciler(
         groupRepository,
@@ -53,6 +55,7 @@ class ControllerRuntime(
         logger.info("Starting controller")
         setupDatabase()
         startAuthServer()
+        startControlPlaneServer()
         startPubSubGrpcServer()
         startGrpcServer()
         startReconciler()
@@ -81,6 +84,11 @@ class ControllerRuntime(
             }
         }
 
+    }
+
+    private fun startControlPlaneServer() {
+        logger.info("Starting envoy control plane...")
+        controlPlaneServer.start()
     }
 
     private fun setupDatabase() {

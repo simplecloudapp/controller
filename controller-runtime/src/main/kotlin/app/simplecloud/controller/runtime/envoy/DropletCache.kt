@@ -1,13 +1,11 @@
 package app.simplecloud.controller.runtime.envoy
 
 import app.simplecloud.controller.runtime.droplet.DropletRepository
+import app.simplecloud.droplet.api.droplet.Droplet
 import com.google.protobuf.Any
 import com.google.protobuf.Duration
 import com.google.protobuf.UInt32Value
 import io.envoyproxy.controlplane.cache.ConfigWatcher
-import io.envoyproxy.controlplane.cache.Resources
-import io.envoyproxy.controlplane.cache.Watch
-import io.envoyproxy.controlplane.cache.XdsRequest
 import io.envoyproxy.controlplane.cache.v3.SimpleCache
 import io.envoyproxy.controlplane.cache.v3.Snapshot
 import io.envoyproxy.envoy.config.cluster.v3.Cluster
@@ -27,101 +25,117 @@ import io.envoyproxy.envoy.extensions.filters.http.router.v3.Router
 import io.envoyproxy.envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
 import io.envoyproxy.envoy.extensions.filters.network.http_connection_manager.v3.HttpFilter
 import io.envoyproxy.envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-import io.envoyproxy.envoy.service.discovery.v3.DiscoveryRequest
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import org.apache.logging.log4j.LogManager
 import java.util.*
 
+/**
+ * This class handles the remapping of the [DropletRepository] to a [SimpleCache] of [Snapshot]s, which are used by the envoy ADS service.
+ */
 class DropletCache(private val dropletRepository: DropletRepository) {
     private val cache = SimpleCache(SimpleCloudNodeGroup())
-    private var watch: Watch = cache.createWatch(
-        true,
-        XdsRequest.create(
-            DiscoveryRequest.newBuilder().setNode(Node.getDefaultInstance())
-                .setTypeUrl(Resources.V3.ENDPOINT_TYPE_URL).addResourceNames("none").build()
-        ),
-        Collections.emptySet(),
-        SimpleCloudResponseTracker()
-    )
+    private val logger = LogManager.getLogger(DropletRepository::class.java)
 
-    init {
-        CoroutineScope(Dispatchers.IO).launch {
-            update()
-        }
-    }
-
+    //Create a new Snapshot by the droplet repository's data
     suspend fun update() {
-        //Gets the simplecloud group, if not found throws an error
-        val group = cache.groups().firstOrNull() ?: throw IllegalArgumentException("Group not found")
+        logger.info("Detected new droplets in DropletRepository, adding to ADS...")
+        val clusters = mutableListOf<Cluster>()
+        val listeners = mutableListOf<Listener>()
+        // This should not be needed as the load assignment is present in the cluster itself
+        // val clas = mutableListOf<ClusterLoadAssignment>()
+
+        dropletRepository.getAll().forEach {
+            clusters.add(createCluster(it))
+            listeners.add(createListener(it))
+            //This should also not be needed
+            //clas.add(createCLA(it))
+        }
+
         cache.setSnapshot(
-            group,
+            SimpleCloudNodeGroup.GROUP,
             Snapshot.create(
-                createClusters(),
-                listOf(),
-                createListeners(),
-                listOf(),
-                listOf(),
-                UUID.randomUUID().toString()
+                clusters,
+                listOf(), // clas,
+                listeners,
+                listOf(), //I think we don't have to configure routes
+                listOf(), //TODO: We don't yet need secrets, but definitely in the future
+                UUID.randomUUID()
+                    .toString() //This can be anything, used internally for versioning. THIS HAS TO BE DIFFERENT FOR EVERY SNAPSHOT
             )
         )
     }
 
-    fun stopWatch() {
-        watch.cancel()
+    //Creates endpoints users can connect with later
+    private fun createListener(it: Droplet): Listener {
+        return Listener.newBuilder().setName("${it.type}-${it.id}").setAddress(
+            Address.newBuilder().setSocketAddress(
+                SocketAddress.newBuilder().setProtocol(SocketAddress.Protocol.TCP).setAddress("0.0.0.0")
+                    .setPortValue(it.envoyPort)
+            )
+        ).setDefaultFilterChain(createListenerFilterChain("${it.type}-${it.id}")).build()
+
     }
 
-    private suspend fun createListeners(): List<Listener> {
-        return dropletRepository.getAll().map {
-            Listener.newBuilder().setName("${it.type}-${it.id}").setAddress(
-                Address.newBuilder().setSocketAddress(
-                    SocketAddress.newBuilder().setProtocol(SocketAddress.Protocol.TCP).setAddress("0.0.0.0")
-                        .setPortValue(it.envoyPort)
-                )
-            ).setDefaultFilterChain(listenerFilterChain("${it.type}-${it.id}")).build()
-        }
-    }
-
-    private suspend fun createClusters(): List<Cluster> {
-        return dropletRepository.getAll().map {
-            Cluster.newBuilder().setName("${it.type}-${it.id}").setConnectTimeout(Duration.newBuilder().setSeconds(5))
-                .setType(Cluster.DiscoveryType.EDS)
-                .setEdsClusterConfig(
-                    EdsClusterConfig.newBuilder()
-                        .setEdsConfig(ConfigSource.newBuilder().setAds(AggregatedConfigSource.getDefaultInstance()))
-                )
-                .setLbPolicy(Cluster.LbPolicy.ROUND_ROBIN)
-                .setLoadAssignment(
-                    ClusterLoadAssignment.newBuilder().setClusterName("${it.type}-${it.id}")
-                        .addEndpoints(
-                            LocalityLbEndpoints.newBuilder()
-                                .addLbEndpoints(
-                                    LbEndpoint.newBuilder().setEndpoint(
-                                        Endpoint.newBuilder()
-                                            .setAddress(
-                                                Address.newBuilder().setSocketAddress(
-                                                    SocketAddress.newBuilder().setPortValue(it.port).setAddress(it.host)
-                                                )
-                                            )
-                                    )
-                                )
-                        )
-                ).putTypedExtensionProtocolOptions(
-                    "envoy.extensions.upstreams.http.v3.HttpProtocolOptions", Any.pack(
-                        HttpProtocolOptions.newBuilder().setExplicitHttpConfig(
-                            HttpProtocolOptions.ExplicitHttpConfig.newBuilder().setHttp2ProtocolOptions(
-                                Http2ProtocolOptions.newBuilder().setMaxConcurrentStreams(
-                                    UInt32Value.of(100)
+    //Creates load assignments for new droplets (I don't yet know if they need to be called every time?)
+    private fun createCLA(it: Droplet): ClusterLoadAssignment {
+        return ClusterLoadAssignment.newBuilder().setClusterName("${it.type}-${it.id}")
+            .addEndpoints(
+                LocalityLbEndpoints.newBuilder().addLbEndpoints(
+                    LbEndpoint.newBuilder().setEndpoint(
+                        Endpoint.newBuilder()
+                            .setAddress(
+                                Address.newBuilder().setSocketAddress(
+                                    SocketAddress.newBuilder().setPortValue(it.port).setAddress(it.host)
+                                        .setProtocol(SocketAddress.Protocol.TCP)
                                 )
                             )
-                        ).build()
                     )
                 )
-                .build()
-        }
+            )
+            .build()
     }
 
-    private fun listenerFilterChain(cluster: String): FilterChain.Builder {
+    //Creates clusters listening to droplets
+    private fun createCluster(it: Droplet): Cluster {
+        return Cluster.newBuilder().setName("${it.type}-${it.id}")
+            .setConnectTimeout(Duration.newBuilder().setSeconds(5))
+            .setType(Cluster.DiscoveryType.EDS)
+            .setEdsClusterConfig(
+                EdsClusterConfig.newBuilder()
+                    .setEdsConfig(ConfigSource.newBuilder().setAds(AggregatedConfigSource.getDefaultInstance()))
+            )
+            .setLbPolicy(Cluster.LbPolicy.ROUND_ROBIN)
+            .setLoadAssignment(
+                ClusterLoadAssignment.newBuilder().setClusterName("${it.type}-${it.id}")
+                    .addEndpoints(
+                        LocalityLbEndpoints.newBuilder()
+                            .addLbEndpoints(
+                                LbEndpoint.newBuilder().setEndpoint(
+                                    Endpoint.newBuilder()
+                                        .setAddress(
+                                            Address.newBuilder().setSocketAddress(
+                                                SocketAddress.newBuilder().setPortValue(it.port).setAddress(it.host)
+                                            )
+                                        )
+                                )
+                            )
+                    )
+            ).putTypedExtensionProtocolOptions(
+                "envoy.extensions.upstreams.http.v3.HttpProtocolOptions", Any.pack(
+                    HttpProtocolOptions.newBuilder().setExplicitHttpConfig(
+                        HttpProtocolOptions.ExplicitHttpConfig.newBuilder().setHttp2ProtocolOptions(
+                            Http2ProtocolOptions.newBuilder().setMaxConcurrentStreams(
+                                UInt32Value.of(100)
+                            )
+                        )
+                    ).build()
+                )
+            )
+            .build()
+
+    }
+
+    //Creates a filter chain that remaps http to grpc
+    private fun createListenerFilterChain(cluster: String): FilterChain.Builder {
         return FilterChain.newBuilder()
             .addFilters(
                 Filter.newBuilder().setName("envoy.filters.network.http_connection_manager")
