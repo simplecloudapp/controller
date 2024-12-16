@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.clikt)
     implementation(libs.spring.crypto)
     implementation(libs.spotify.completablefutures)
+    implementation(libs.envoy.controlplane)
 }
 
 application {

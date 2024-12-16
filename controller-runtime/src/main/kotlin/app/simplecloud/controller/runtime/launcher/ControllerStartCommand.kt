@@ -45,6 +45,11 @@ class ControllerStartCommand(
         envvar = "AUTHORIZATION_PORT"
     ).int().default(5818)
 
+    val envoyDiscoveryPort: Int by option(
+        help = "Authorization port (default: 5814)",
+        envvar = "ENVOY_DISCOVERY_PORT"
+    ).int().default(5814)
+
     private val authSecretPath: Path by option(
         help = "Path to auth secret file (default: .auth.secret)",
         envvar = "AUTH_SECRET_PATH"
