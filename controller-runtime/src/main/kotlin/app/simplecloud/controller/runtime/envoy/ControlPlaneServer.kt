@@ -10,9 +10,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.apache.logging.log4j.LogManager
 
+/**
+ * @see <a href="https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol-ads">ADS Documentation</a>
+ */
 class ControlPlaneServer(private val args: ControllerStartCommand, private val dropletRepository: DropletRepository) {
     private val server = V3DiscoveryServer(dropletRepository.getAsDropletCache().getCache())
-    private val logger = LogManager.getLogger(ControlPlaneServer::class)
+    private val logger = LogManager.getLogger(ControlPlaneServer::class.java)
 
     fun start() {
         val serverBuilder = ServerBuilder.forPort(args.envoyDiscoveryPort)

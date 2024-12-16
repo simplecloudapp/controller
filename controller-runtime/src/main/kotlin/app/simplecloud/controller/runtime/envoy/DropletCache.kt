@@ -33,7 +33,7 @@ import java.util.*
  */
 class DropletCache(private val dropletRepository: DropletRepository) {
     private val cache = SimpleCache(SimpleCloudNodeGroup())
-    private val logger = LogManager.getLogger(DropletRepository::class.java)
+    private val logger = LogManager.getLogger(DropletCache::class.java)
 
     //Create a new Snapshot by the droplet repository's data
     suspend fun update() {
