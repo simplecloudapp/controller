@@ -1,6 +1,8 @@
 package app.simplecloud.controller.runtime
 
 import app.simplecloud.controller.runtime.database.DatabaseFactory
+import app.simplecloud.controller.runtime.droplet.ControllerDropletService
+import app.simplecloud.controller.runtime.droplet.DropletRepository
 import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.group.GroupService
 import app.simplecloud.controller.runtime.host.ServerHostRepository
@@ -29,6 +31,7 @@ class ControllerRuntime(
     private val database = DatabaseFactory.createDatabase(controllerStartCommand.databaseUrl)
     private val authCallCredentials = AuthCallCredentials(controllerStartCommand.authSecret)
 
+    private val dropletRepository = DropletRepository()
     private val groupRepository = GroupRepository(controllerStartCommand.groupPath)
     private val numericalIdRepository = ServerNumericalIdRepository()
     private val serverRepository = ServerRepository(database, numericalIdRepository)
@@ -154,6 +157,7 @@ class ControllerRuntime(
                     )
                 )
             )
+            .addService(ControllerDropletService(dropletRepository))
             .intercept(AuthSecretInterceptor(controllerStartCommand.grpcHost, controllerStartCommand.authorizationPort))
             .build()
     }
