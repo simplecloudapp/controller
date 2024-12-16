@@ -40,21 +40,19 @@ class DropletCache(private val dropletRepository: DropletRepository) {
         logger.info("Detected new droplets in DropletRepository, adding to ADS...")
         val clusters = mutableListOf<Cluster>()
         val listeners = mutableListOf<Listener>()
-        // This should not be needed as the load assignment is present in the cluster itself
-        // val clas = mutableListOf<ClusterLoadAssignment>()
+        val clas = mutableListOf<ClusterLoadAssignment>()
 
         dropletRepository.getAll().forEach {
             clusters.add(createCluster(it))
             listeners.add(createListener(it))
-            //This should also not be needed
-            //clas.add(createCLA(it))
+            clas.add(createCLA(it))
         }
 
         cache.setSnapshot(
             SimpleCloudNodeGroup.GROUP,
             Snapshot.create(
                 clusters,
-                listOf(), // clas,
+                clas,
                 listeners,
                 listOf(), //I think we don't have to configure routes
                 listOf(), //TODO: We don't yet need secrets, but definitely in the future
