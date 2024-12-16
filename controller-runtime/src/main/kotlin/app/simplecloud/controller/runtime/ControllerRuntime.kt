@@ -10,6 +10,7 @@ import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.runtime.launcher.ControllerStartCommand
 import app.simplecloud.controller.runtime.oauth.OAuthServer
 import app.simplecloud.controller.runtime.reconciler.Reconciler
+import app.simplecloud.controller.runtime.server.ServerHostAttacher
 import app.simplecloud.controller.runtime.server.ServerNumericalIdRepository
 import app.simplecloud.controller.runtime.server.ServerRepository
 import app.simplecloud.controller.runtime.server.ServerService
@@ -32,11 +33,12 @@ class ControllerRuntime(
     private val database = DatabaseFactory.createDatabase(controllerStartCommand.databaseUrl)
     private val authCallCredentials = AuthCallCredentials(controllerStartCommand.authSecret)
 
-    private val dropletRepository = DropletRepository()
     private val groupRepository = GroupRepository(controllerStartCommand.groupPath)
     private val numericalIdRepository = ServerNumericalIdRepository()
     private val serverRepository = ServerRepository(database, numericalIdRepository)
     private val hostRepository = ServerHostRepository()
+    private val serverHostAttacher = ServerHostAttacher(hostRepository, serverRepository)
+    private val dropletRepository = DropletRepository(authCallCredentials, serverHostAttacher, hostRepository)
     private val pubSubService = PubSubService()
     private val controlPlaneServer = ControlPlaneServer(controllerStartCommand, dropletRepository)
     private val authServer = OAuthServer(controllerStartCommand, database)
@@ -162,7 +164,8 @@ class ControllerRuntime(
                         controllerStartCommand.grpcHost,
                         controllerStartCommand.pubSubGrpcPort,
                         authCallCredentials
-                    )
+                    ),
+                    serverHostAttacher
                 )
             )
             .addService(ControllerDropletService(dropletRepository))

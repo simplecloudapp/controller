@@ -11,7 +11,6 @@ import app.simplecloud.pubsub.PubSubClient
 import build.buf.gen.simplecloud.controller.v1.*
 import io.grpc.Status
 import io.grpc.StatusException
-import kotlinx.coroutines.coroutineScope
 import org.apache.logging.log4j.LogManager
 import java.time.LocalDateTime
 import java.util.*
@@ -23,6 +22,7 @@ class ServerService(
     private val groupRepository: GroupRepository,
     private val authCallCredentials: AuthCallCredentials,
     private val pubSubClient: PubSubClient,
+    private val serverHostAttacher: ServerHostAttacher,
 ) : ControllerServerServiceGrpcKt.ControllerServerServiceCoroutineImplBase() {
 
     private val logger = LogManager.getLogger(ServerService::class.java)
@@ -31,25 +31,9 @@ class ServerService(
     override suspend fun attachServerHost(request: AttachServerHostRequest): ServerHostDefinition {
         val serverHost = ServerHost.fromDefinition(request.serverHost, authCallCredentials)
         try {
-            hostRepository.delete(serverHost)
-            hostRepository.save(serverHost)
+            serverHostAttacher.attach(serverHost)
         } catch (e: Exception) {
-            throw StatusException(Status.INTERNAL.withDescription("Could not save serverhost").withCause(e))
-        }
-        logger.info("Successfully registered ServerHost ${serverHost.id}.")
-
-        coroutineScope {
-            serverRepository.findServersByHostId(serverHost.id).forEach { server ->
-                logger.info("Reattaching Server ${server.uniqueId} of group ${server.group}...")
-                try {
-                    val result = serverHost.stub?.reattachServer(server.toDefinition()) ?: throw StatusException(Status.INTERNAL.withDescription("Could not reattach server, is the host misconfigured?"))
-                    serverRepository.save(Server.fromDefinition(result))
-                    logger.info("Success!")
-                } catch (e: Exception) {
-                    logger.error("Server was found to be offline, unregistering...")
-                    serverRepository.delete(server)
-                }
-            }
+            throw StatusException(Status.INTERNAL.withDescription("Could not attach serverhost").withCause(e))
         }
         return serverHost.toDefinition()
     }
@@ -214,7 +198,10 @@ class ServerService(
         }
     }
 
-    private suspend fun stopServer(server: ServerDefinition, cause: ServerStopCause = ServerStopCause.NATURAL_STOP): ServerDefinition {
+    private suspend fun stopServer(
+        server: ServerDefinition,
+        cause: ServerStopCause = ServerStopCause.NATURAL_STOP
+    ): ServerDefinition {
         val host = hostRepository.findServerHostById(server.hostId)
             ?: throw Status.NOT_FOUND
                 .withDescription("No server host was found matching this server.")
