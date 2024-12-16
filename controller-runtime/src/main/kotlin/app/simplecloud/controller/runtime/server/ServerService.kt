@@ -27,6 +27,7 @@ class ServerService(
 
     private val logger = LogManager.getLogger(ServerService::class.java)
 
+    @Deprecated("This method will be removed soon. Please use DropletService#registerDroplet")
     override suspend fun attachServerHost(request: AttachServerHostRequest): ServerHostDefinition {
         val serverHost = ServerHost.fromDefinition(request.serverHost, authCallCredentials)
         try {
