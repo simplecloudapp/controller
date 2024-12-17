@@ -12,7 +12,7 @@ jooq = "3.19.3"
 configurate = "4.1.2"
 sqliteJdbc = "3.44.1.0"
 clikt = "4.3.0"
-sonatypeCentralPortalPublisher = "1.2.3"
+sonatypeCentralPortalPublisher = "1.2.4"
 spotifyCompletableFutures = "0.3.6"
 
 [libraries]
