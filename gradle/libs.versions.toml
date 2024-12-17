@@ -11,7 +11,7 @@ simpleCloudPubSub = "1.0.5"
 jooq = "3.19.3"
 configurate = "4.1.2"
 sqliteJdbc = "3.44.1.0"
-clikt = "4.3.0"
+clikt = "5.0.2"
 sonatypeCentralPortalPublisher = "1.2.3"
 spotifyCompletableFutures = "0.3.6"
 
