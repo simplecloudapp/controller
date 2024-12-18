@@ -4,9 +4,7 @@ import app.simplecloud.droplet.api.time.ProtobufTimestamp
 import build.buf.gen.simplecloud.controller.v1.ServerDefinition
 import build.buf.gen.simplecloud.controller.v1.ServerState
 import build.buf.gen.simplecloud.controller.v1.ServerType
-import java.time.Instant
 import java.time.LocalDateTime
-import java.time.ZoneId
 
 data class Server(
     val uniqueId: String,

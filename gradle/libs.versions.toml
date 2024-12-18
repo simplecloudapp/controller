@@ -3,7 +3,7 @@ kotlin = "2.0.20"
 kotlin-coroutines = "1.9.0"
 shadow = "8.3.3"
 log4j = "2.20.0"
-droplet-api = "0.0.1-dev.7e049d6"
+droplet-api = "0.0.1-dev.cf07a34"
 simplecloud-pubsub = "1.0.5"
 simplecloud-metrics = "1.0.0"
 jooq = "3.19.3"
@@ -23,7 +23,6 @@ kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", 
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-slf4j = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
-
 
 simplecloud-droplet-api = { module = "app.simplecloud.droplet.api:droplet-api", version.ref = "droplet-api" }
 simplecloud-pubsub = { module = "app.simplecloud:simplecloud-pubsub", version.ref = "simplecloud-pubsub" }

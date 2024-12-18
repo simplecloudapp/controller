@@ -1,11 +1,11 @@
 package app.simplecloud.controller.api
 
 import app.simplecloud.controller.shared.group.Group
-import build.buf.gen.simplecloud.controller.v1.ServerType
 import app.simplecloud.controller.shared.server.Server
 import build.buf.gen.simplecloud.controller.v1.ServerStartCause
 import build.buf.gen.simplecloud.controller.v1.ServerState
 import build.buf.gen.simplecloud.controller.v1.ServerStopCause
+import build.buf.gen.simplecloud.controller.v1.ServerType
 import java.util.concurrent.CompletableFuture
 
 interface ServerApi {
@@ -52,20 +52,53 @@ interface ServerApi {
          * @param groupName the group name of the group the new server should be of.
          * @return a [CompletableFuture] with a [Server] or null.
          */
-        fun startServer(groupName: String, startCause: ServerStartCause = ServerStartCause.API_START): CompletableFuture<Server?>
+        fun startServer(
+            groupName: String,
+            startCause: ServerStartCause = ServerStartCause.API_START
+        ): CompletableFuture<Server?>
 
         /**
          * @param groupName the group name of the servers group.
          * @param numericalId the numerical id of the server.
          * @return a [CompletableFuture] with the stopped [Server].
          */
-        fun stopServer(groupName: String, numericalId: Long, stopCause: ServerStopCause = ServerStopCause.API_STOP): CompletableFuture<Server>
+        fun stopServer(
+            groupName: String,
+            numericalId: Long,
+            stopCause: ServerStopCause = ServerStopCause.API_STOP
+        ): CompletableFuture<Server>
 
         /**
          * @param id the id of the server.
          * @return a [CompletableFuture] with the stopped [Server].
          */
         fun stopServer(id: String, stopCause: ServerStopCause = ServerStopCause.API_STOP): CompletableFuture<Server>
+
+        /**
+         * Stops all servers within a specified group.
+         *
+         * @param groupName The name of the server group to stop.
+         * @param stopCause The reason for stopping the servers. Defaults to [ServerStopCause.API_STOP].
+         * @return A [CompletableFuture] containing a list of stopped [Server] instances.
+         */
+        fun stopServers(
+            groupName: String,
+            stopCause: ServerStopCause = ServerStopCause.API_STOP
+        ): CompletableFuture<List<Server>>
+
+        /**
+         * Stops all servers within a specified group and sets a timeout to prevent new server starts for the group.
+         *
+         * @param groupName The name of the server group to stop.
+         * @param timeoutSeconds The duration (in seconds) for which new server starts will be prevented.
+         * @param stopCause The reason for stopping the servers. Defaults to [ServerStopCause.API_STOP].
+         * @return A [CompletableFuture] containing a list of stopped [Server] instances.
+         */
+        fun stopServers(
+            groupName: String,
+            timeoutSeconds: Int,
+            stopCause: ServerStopCause = ServerStopCause.API_STOP
+        ): CompletableFuture<List<Server>>
 
         /**
          * @param id the id of the server.
@@ -144,6 +177,32 @@ interface ServerApi {
          * @return the stopped [Server].
          */
         suspend fun stopServer(id: String, stopCause: ServerStopCause = ServerStopCause.API_STOP): Server
+
+        /**
+         * Stops all servers within a specified group.
+         *
+         * @param groupName The name of the server group to stop.
+         * @param stopCause The reason for stopping the servers. Defaults to [ServerStopCause.API_STOP].
+         * @return A list of stopped [Server] instances.
+         */
+        suspend fun stopServers(
+            groupName: String,
+            stopCause: ServerStopCause = ServerStopCause.API_STOP
+        ): List<Server>
+
+        /**
+         * Stops all servers within a specified group and sets a timeout to prevent new server starts for the group.
+         *
+         * @param groupName The name of the server group to stop.
+         * @param timeoutSeconds The duration (in seconds) for which new server starts will be prevented.
+         * @param stopCause The reason for stopping the servers. Defaults to [ServerStopCause.API_STOP].
+         * @return A list of stopped [Server] instances.
+         */
+        suspend fun stopServers(
+            groupName: String,
+            timeoutSeconds: Int,
+            stopCause: ServerStopCause = ServerStopCause.API_STOP
+        ): List<Server>
 
         /**
          * @param id the id of the server.

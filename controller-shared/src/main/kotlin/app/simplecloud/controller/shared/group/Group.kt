@@ -18,6 +18,9 @@ data class Group(
     val properties: Map<String, String> = mutableMapOf()
 ) {
 
+    @Transient
+    var timeout: GroupTimeout? = null
+
     fun toDefinition(): GroupDefinition {
         return GroupDefinition.newBuilder()
             .setName(name)
