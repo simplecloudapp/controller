@@ -4,6 +4,7 @@ import app.simplecloud.controller.runtime.MetricsEventNames
 import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.shared.group.Group
+import app.simplecloud.controller.shared.group.GroupTimeout
 import app.simplecloud.controller.shared.host.ServerHost
 import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.droplet.api.auth.AuthCallCredentials
@@ -307,6 +308,43 @@ class ServerService(
             return stopped
         } catch (e: Exception) {
             throw StatusException(Status.INTERNAL.withDescription("Error whilst stopping server").withCause(e))
+        }
+    }
+
+    override suspend fun stopServersByGroupWithTimeout(request: StopServersByGroupWithTimeoutRequest): StopServersByGroupResponse {
+        return stopServersByGroup(request.groupName, request.timeoutSeconds, request.stopCause)
+    }
+
+    override suspend fun stopServersByGroup(request: StopServersByGroupRequest): StopServersByGroupResponse {
+        return stopServersByGroup(request.groupName, null, request.stopCause)
+    }
+
+    private suspend fun stopServersByGroup(
+        groupName: String,
+        timeout: Int?,
+        cause: ServerStopCause = ServerStopCause.NATURAL_STOP
+    ): StopServersByGroupResponse {
+        val group = groupRepository.find(groupName)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("No group was found matching this name. $groupName"))
+        val groupServers = serverRepository.findServersByGroup(group.name)
+        if (groupServers.isEmpty()) {
+            throw StatusException(Status.NOT_FOUND.withDescription("No server was found matching this group name. ${group.name}"))
+        }
+
+        val serverDefinitionList = mutableListOf<ServerDefinition>()
+
+        try {
+            timeout?.let {
+                group.timeout = GroupTimeout(it);
+            }
+
+            groupServers.forEach { server ->
+                serverDefinitionList.add(stopServer(server.toDefinition(), cause))
+            }
+
+            return stopServersByGroupResponse { servers.addAll(serverDefinitionList) }
+        } catch (e: Exception) {
+            throw StatusException(Status.INTERNAL.withDescription("Error whilst stopping server by group").withCause(e))
         }
     }
 
