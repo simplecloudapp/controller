@@ -282,7 +282,6 @@ class ServerService(
             ?: throw StatusException(Status.NOT_FOUND.withDescription("Server with id ${request.serverId} does not exist."))
         val serverBefore = server.copy()
         server.state = request.serverState
-        println("STATE ${server.state}")
         serverRepository.save(server)
         pubSubClient.publish(
             "event",
