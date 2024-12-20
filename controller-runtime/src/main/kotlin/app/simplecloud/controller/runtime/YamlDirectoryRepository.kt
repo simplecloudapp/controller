@@ -14,6 +14,7 @@ import java.nio.file.*
 abstract class YamlDirectoryRepository<E, I>(
     private val directory: Path,
     private val clazz: Class<E>,
+    private val watcherEvents: WatcherEvents<E> = WatcherEvents.empty()
 ) : LoadableRepository<E, I> {
 
     private val logger = LogManager.getLogger(this::class.java)
@@ -113,13 +114,24 @@ abstract class YamlDirectoryRepository<E, I>(
                     val kind = event.kind()
                     logger.info("Detected change in $resolvedPath (${getChangeStatus(kind)})")
                     when (kind) {
-                        StandardWatchEventKinds.ENTRY_CREATE,
-                        StandardWatchEventKinds.ENTRY_MODIFY
-                            -> {
-                            load(resolvedPath.toFile())
+                        StandardWatchEventKinds.ENTRY_CREATE -> {
+                            val entity = load(resolvedPath.toFile())
+                            if (entity != null) {
+                                watcherEvents.onCreate(entity)
+                            }
+                        }
+                        StandardWatchEventKinds.ENTRY_MODIFY -> {
+                                val entity = load(resolvedPath.toFile())
+                                if (entity != null) {
+                                    watcherEvents.onModify(entity)
+                                }
                         }
 
                         StandardWatchEventKinds.ENTRY_DELETE -> {
+                            val entity = entities[resolvedPath.toFile()]
+                            if (entity != null) {
+                                watcherEvents.onDelete(entity)
+                            }
                             deleteFile(resolvedPath.toFile())
                         }
                     }
@@ -135,6 +147,20 @@ abstract class YamlDirectoryRepository<E, I>(
             StandardWatchEventKinds.ENTRY_DELETE -> "Deleted"
             StandardWatchEventKinds.ENTRY_MODIFY -> "Modified"
             else -> "Unknown"
+        }
+    }
+
+    interface WatcherEvents<E> {
+        fun onCreate(entity: E)
+        fun onDelete(entity: E)
+        fun onModify(entity: E)
+
+        companion object {
+            fun <E> empty(): WatcherEvents<E> = object : WatcherEvents<E> {
+                override fun onCreate(entity: E) {}
+                override fun onDelete(entity: E) {}
+                override fun onModify(entity: E) {}
+            }
         }
     }
 

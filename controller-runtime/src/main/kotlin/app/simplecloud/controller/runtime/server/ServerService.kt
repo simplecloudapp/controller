@@ -1,5 +1,6 @@
 package app.simplecloud.controller.runtime.server
 
+import app.simplecloud.controller.runtime.MetricsEventNames
 import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostRepository
 import app.simplecloud.controller.shared.group.Group
@@ -9,6 +10,8 @@ import app.simplecloud.droplet.api.auth.AuthCallCredentials
 import app.simplecloud.droplet.api.time.ProtobufTimestamp
 import app.simplecloud.pubsub.PubSubClient
 import build.buf.gen.simplecloud.controller.v1.*
+import build.buf.gen.simplecloud.metrics.v1.metric
+import build.buf.gen.simplecloud.metrics.v1.metricMeta
 import io.grpc.Status
 import io.grpc.StatusException
 import org.apache.logging.log4j.LogManager
@@ -68,12 +71,51 @@ class ServerService(
             try {
                 val before = serverRepository.find(server.uniqueId)
                     ?: throw StatusException(Status.NOT_FOUND.withDescription("Server not found"))
-                pubSubClient.publish(
-                    "event",
-                    ServerUpdateEvent.newBuilder()
-                        .setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
-                        .setServerBefore(before.toDefinition()).setServerAfter(request.server).build()
-                )
+                val wasUpdated = before != server
+
+                if (wasUpdated) {
+                    pubSubClient.publish(
+                        "event",
+                        ServerUpdateEvent.newBuilder()
+                            .setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                            .setServerBefore(before.toDefinition()).setServerAfter(request.server).build()
+                    )
+
+                    pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+                        metricType = "ACTIVITY_LOG"
+                        metricValue = 1L
+                        time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+                        meta.addAll(
+                            listOf(
+                                metricMeta {
+                                    dataName = "displayName"
+                                    dataValue = "${server.group} #${server.numericalId}"
+                                },
+                                metricMeta {
+                                    dataName = "status"
+                                    dataValue = "EDITED"
+                                },
+                                metricMeta {
+                                    dataName = "resourceType"
+                                    dataValue = "SERVER"
+                                },
+                                metricMeta {
+                                    dataName = "groupName"
+                                    dataValue = server.group
+                                },
+                                metricMeta {
+                                    dataName = "numericalId"
+                                    dataValue = server.numericalId.toString()
+                                },
+                                metricMeta {
+                                    dataName = "by"
+                                    dataValue = "API"
+                                }
+                            )
+                        )
+                    })
+                }
+
                 serverRepository.save(server)
                 return server.toDefinition()
             } catch (e: Exception) {
@@ -101,6 +143,41 @@ class ServerService(
                     .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
                     .build()
             )
+
+            pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+                metricType = "ACTIVITY_LOG"
+                metricValue = 1L
+                time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+                meta.addAll(
+                    listOf(
+                        metricMeta {
+                            dataName = "displayName"
+                            dataValue = "${server.group} #${server.numericalId}"
+                        },
+                        metricMeta {
+                            dataName = "status"
+                            dataValue = "STOPPED"
+                        },
+                        metricMeta {
+                            dataName = "resourceType"
+                            dataValue = "SERVER"
+                        },
+                        metricMeta {
+                            dataName = "groupName"
+                            dataValue = server.group
+                        },
+                        metricMeta {
+                            dataName = "numericalId"
+                            dataValue = server.numericalId.toString()
+                        },
+                        metricMeta {
+                            dataName = "by"
+                            dataValue = ServerStopCause.NATURAL_STOP.toString()
+                        }
+                    )
+                )
+            })
+
             return server.toDefinition()
         }
     }
@@ -137,6 +214,41 @@ class ServerService(
                     .setStartCause(request.startCause)
                     .build()
             )
+
+            pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+                metricType = "ACTIVITY_LOG"
+                metricValue = 1L
+                time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+                meta.addAll(
+                    listOf(
+                        metricMeta {
+                            dataName = "displayName"
+                            dataValue = "${server.groupName} #${server.numericalId}"
+                        },
+                        metricMeta {
+                            dataName = "status"
+                            dataValue = "STARTED"
+                        },
+                        metricMeta {
+                            dataName = "resourceType"
+                            dataValue = "SERVER"
+                        },
+                        metricMeta {
+                            dataName = "groupName"
+                            dataValue = server.groupName
+                        },
+                        metricMeta {
+                            dataName = "numericalId"
+                            dataValue = server.numericalId.toString()
+                        },
+                        metricMeta {
+                            dataName = "by"
+                            dataValue = request.startCause.toString()
+                        }
+                    )
+                )
+            })
+
             return server
         } catch (e: Exception) {
             throw StatusException(Status.INTERNAL.withDescription("Error whilst starting server").withCause(e))
@@ -217,6 +329,41 @@ class ServerService(
                     .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
                     .build()
             )
+
+            pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+                metricType = "ACTIVITY_LOG"
+                metricValue = 1L
+                time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+                meta.addAll(
+                    listOf(
+                        metricMeta {
+                            dataName = "displayName"
+                            dataValue = "${server.groupName} #${server.numericalId}"
+                        },
+                        metricMeta {
+                            dataName = "status"
+                            dataValue = "STOPPED"
+                        },
+                        metricMeta {
+                            dataName = "resourceType"
+                            dataValue = "SERVER"
+                        },
+                        metricMeta {
+                            dataName = "groupName"
+                            dataValue = server.groupName
+                        },
+                        metricMeta {
+                            dataName = "numericalId"
+                            dataValue = server.numericalId.toString()
+                        },
+                        metricMeta {
+                            dataName = "by"
+                            dataValue = cause.toString()
+                        }
+                    )
+                )
+            })
+
             serverRepository.delete(Server.fromDefinition(stopped))
             return stopped
         } catch (e: Exception) {
@@ -236,6 +383,40 @@ class ServerService(
             ServerUpdateEvent.newBuilder().setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                 .setServerBefore(serverBefore.toDefinition()).setServerAfter(server.toDefinition()).build()
         )
+
+        pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+            metricType = "ACTIVITY_LOG"
+            metricValue = 1L
+            time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+            meta.addAll(
+                listOf(
+                    metricMeta {
+                        dataName = "displayName"
+                        dataValue = "${server.group} #${server.numericalId}"
+                    },
+                    metricMeta {
+                        dataName = "status"
+                        dataValue = "EDITED"
+                    },
+                    metricMeta {
+                        dataName = "resourceType"
+                        dataValue = "SERVER"
+                    },
+                    metricMeta {
+                        dataName = "groupName"
+                        dataValue = server.group
+                    },
+                    metricMeta {
+                        dataName = "numericalId"
+                        dataValue = server.numericalId.toString()
+                    },
+                    metricMeta {
+                        dataName = "by"
+                        dataValue = "API"
+                    }
+                )
+            )
+        })
         return server.toDefinition()
     }
 
@@ -250,6 +431,41 @@ class ServerService(
             ServerUpdateEvent.newBuilder().setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                 .setServerBefore(serverBefore.toDefinition()).setServerAfter(server.toDefinition()).build()
         )
+
+        pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+            metricType = "ACTIVITY_LOG"
+            metricValue = 1L
+            time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+            meta.addAll(
+                listOf(
+                    metricMeta {
+                        dataName = "displayName"
+                        dataValue = "${server.group} #${server.numericalId}"
+                    },
+                    metricMeta {
+                        dataName = "status"
+                        dataValue = "EDITED"
+                    },
+                    metricMeta {
+                        dataName = "resourceType"
+                        dataValue = "SERVER"
+                    },
+                    metricMeta {
+                        dataName = "groupName"
+                        dataValue = server.group
+                    },
+                    metricMeta {
+                        dataName = "numericalId"
+                        dataValue = server.numericalId.toString()
+                    },
+                    metricMeta {
+                        dataName = "by"
+                        dataValue = "API"
+                    }
+                )
+            )
+        })
+
         return server.toDefinition()
     }
 

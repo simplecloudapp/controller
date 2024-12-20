@@ -33,7 +33,12 @@ class ControllerRuntime(
     private val database = DatabaseFactory.createDatabase(controllerStartCommand.databaseUrl)
     private val authCallCredentials = AuthCallCredentials(controllerStartCommand.authSecret)
 
-    private val groupRepository = GroupRepository(controllerStartCommand.groupPath)
+    private val pubSubClient = PubSubClient(
+        controllerStartCommand.grpcHost,
+        controllerStartCommand.pubSubGrpcPort,
+        authCallCredentials
+    )
+    private val groupRepository = GroupRepository(controllerStartCommand.groupPath, pubSubClient)
     private val numericalIdRepository = ServerNumericalIdRepository()
     private val serverRepository = ServerRepository(database, numericalIdRepository)
     private val hostRepository = ServerHostRepository()
@@ -160,11 +165,7 @@ class ControllerRuntime(
                     hostRepository,
                     groupRepository,
                     authCallCredentials,
-                    PubSubClient(
-                        controllerStartCommand.grpcHost,
-                        controllerStartCommand.pubSubGrpcPort,
-                        authCallCredentials
-                    ),
+                    pubSubClient,
                     serverHostAttacher
                 )
             )
