@@ -2,10 +2,10 @@ package app.simplecloud.controller.api.impl.future
 
 import app.simplecloud.controller.api.ServerApi
 import app.simplecloud.controller.shared.group.Group
-import build.buf.gen.simplecloud.controller.v1.*
 import app.simplecloud.controller.shared.server.Server
 import app.simplecloud.droplet.api.auth.AuthCallCredentials
 import app.simplecloud.droplet.api.future.toCompletable
+import build.buf.gen.simplecloud.controller.v1.*
 import io.grpc.ManagedChannel
 import java.util.concurrent.CompletableFuture
 
@@ -79,7 +79,11 @@ class ServerApiFutureImpl(
         }
     }
 
-    override fun stopServer(groupName: String, numericalId: Long, stopCause: ServerStopCause): CompletableFuture<Server> {
+    override fun stopServer(
+        groupName: String,
+        numericalId: Long,
+        stopCause: ServerStopCause
+    ): CompletableFuture<Server> {
         return serverServiceStub.stopServerByNumerical(
             StopServerByNumericalRequest.newBuilder()
                 .setGroupName(groupName)
@@ -99,6 +103,33 @@ class ServerApiFutureImpl(
                 .build()
         ).toCompletable().thenApply {
             Server.fromDefinition(it)
+        }
+    }
+
+    override fun stopServers(groupName: String, stopCause: ServerStopCause): CompletableFuture<List<Server>> {
+        return serverServiceStub.stopServersByGroup(
+            StopServersByGroupRequest.newBuilder()
+                .setGroupName(groupName)
+                .setStopCause(stopCause)
+                .build()
+        ).toCompletable().thenApply {
+            Server.fromDefinition(it.serversList)
+        }
+    }
+
+    override fun stopServers(
+        groupName: String,
+        timeoutSeconds: Int,
+        stopCause: ServerStopCause
+    ): CompletableFuture<List<Server>> {
+        return serverServiceStub.stopServersByGroupWithTimeout(
+            StopServersByGroupWithTimeoutRequest.newBuilder()
+                .setGroupName(groupName)
+                .setStopCause(stopCause)
+                .setTimeoutSeconds(timeoutSeconds)
+                .build()
+        ).toCompletable().thenApply {
+            Server.fromDefinition(it.serversList)
         }
     }
 

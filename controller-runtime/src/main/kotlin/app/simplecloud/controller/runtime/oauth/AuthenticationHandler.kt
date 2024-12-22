@@ -130,7 +130,8 @@ class AuthenticationHandler(
             call.respond(HttpStatusCode.NotFound, "User not found")
             return
         }
-        call.respond(mapOf(
+        call.respond(
+            mapOf(
             "user_id" to user.userId,
             "username" to user.username,
             "scope" to user.scopes.joinToString(" "),

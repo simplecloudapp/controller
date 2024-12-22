@@ -99,8 +99,14 @@ class GroupReconciler(
 
     private suspend fun startServers() {
         val available = serverHostRepository.areServerHostsAvailable()
-        if(!available) return
-        if(isNewServerNeeded())
+        if (!available) return
+        group.timeout?.let {
+            if (it.isCooldownActive()) {
+                return
+            }
+        }
+
+        if (isNewServerNeeded())
             startServer()
     }
 
