@@ -375,48 +375,55 @@ class ServerService(
     override suspend fun updateServerProperty(request: UpdateServerPropertyRequest): ServerDefinition {
         val server = serverRepository.find(request.serverId)
             ?: throw StatusException(Status.NOT_FOUND.withDescription("Server with id ${request.serverId} does not exist."))
-        val serverBefore = server.copy()
+        val serverBefore = Server.fromDefinition(server.toDefinition())
         server.properties[request.propertyKey] = request.propertyValue
         serverRepository.save(server)
-        pubSubClient.publish(
-            "event",
-            ServerUpdateEvent.newBuilder().setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
-                .setServerBefore(serverBefore.toDefinition()).setServerAfter(server.toDefinition()).build()
-        )
 
-        pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
-            metricType = "ACTIVITY_LOG"
-            metricValue = 1L
-            time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
-            meta.addAll(
-                listOf(
-                    metricMeta {
-                        dataName = "displayName"
-                        dataValue = "${server.group} #${server.numericalId}"
-                    },
-                    metricMeta {
-                        dataName = "status"
-                        dataValue = "EDITED"
-                    },
-                    metricMeta {
-                        dataName = "resourceType"
-                        dataValue = "SERVER"
-                    },
-                    metricMeta {
-                        dataName = "groupName"
-                        dataValue = server.group
-                    },
-                    metricMeta {
-                        dataName = "numericalId"
-                        dataValue = server.numericalId.toString()
-                    },
-                    metricMeta {
-                        dataName = "by"
-                        dataValue = "API"
-                    }
-                )
+        if (serverBefore.properties[request.propertyKey] != server.properties[request.propertyKey]) {
+            pubSubClient.publish(
+                "event",
+                ServerUpdateEvent.newBuilder()
+                    .setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setServerBefore(serverBefore.toDefinition())
+                    .setServerAfter(server.toDefinition())
+                    .build()
             )
-        })
+
+            pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+                metricType = "ACTIVITY_LOG"
+                metricValue = 1L
+                time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+                meta.addAll(
+                    listOf(
+                        metricMeta {
+                            dataName = "displayName"
+                            dataValue = "${server.group} #${server.numericalId}"
+                        },
+                        metricMeta {
+                            dataName = "status"
+                            dataValue = "EDITED"
+                        },
+                        metricMeta {
+                            dataName = "resourceType"
+                            dataValue = "SERVER"
+                        },
+                        metricMeta {
+                            dataName = "groupName"
+                            dataValue = server.group
+                        },
+                        metricMeta {
+                            dataName = "numericalId"
+                            dataValue = server.numericalId.toString()
+                        },
+                        metricMeta {
+                            dataName = "by"
+                            dataValue = "API"
+                        }
+                    )
+                )
+            })
+        }
+
         return server.toDefinition()
     }
 
