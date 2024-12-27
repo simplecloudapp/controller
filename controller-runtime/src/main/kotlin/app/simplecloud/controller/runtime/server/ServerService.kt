@@ -331,6 +331,14 @@ class ServerService(
     override suspend fun stopServer(request: StopServerRequest): ServerDefinition {
         val server = serverRepository.find(request.serverId)
             ?: throw StatusException(Status.NOT_FOUND.withDescription("No server was found matching this id."))
+
+        request.since?.let { sinceTimestamp ->
+            val sinceLocalDateTime = ProtobufTimestamp.toLocalDateTime(sinceTimestamp)
+            if (server.createdAt.isBefore(sinceLocalDateTime)) {
+                return server.toDefinition()
+            }
+        }
+
         try {
             val stopped = stopServer(server.toDefinition(), request.stopCause)
             return stopped
@@ -340,21 +348,30 @@ class ServerService(
     }
 
     override suspend fun stopServersByGroupWithTimeout(request: StopServersByGroupWithTimeoutRequest): StopServersByGroupResponse {
-        return stopServersByGroup(request.groupName, request.timeoutSeconds, request.stopCause)
+        val sinceLocalDateTime = request.since?.let {
+            ProtobufTimestamp.toLocalDateTime(it)
+        }
+        return stopServersByGroup(request.groupName, request.timeoutSeconds, request.stopCause, sinceLocalDateTime)
     }
 
     override suspend fun stopServersByGroup(request: StopServersByGroupRequest): StopServersByGroupResponse {
-        return stopServersByGroup(request.groupName, null, request.stopCause)
+        val sinceLocalDateTime = request.since?.let {
+            ProtobufTimestamp.toLocalDateTime(it)
+        }
+        return stopServersByGroup(request.groupName, null, request.stopCause, sinceLocalDateTime)
     }
 
     private suspend fun stopServersByGroup(
         groupName: String,
         timeout: Int?,
-        cause: ServerStopCause = ServerStopCause.NATURAL_STOP
+        cause: ServerStopCause = ServerStopCause.NATURAL_STOP,
+        since: LocalDateTime? = null
     ): StopServersByGroupResponse {
         val group = groupRepository.find(groupName)
             ?: throw StatusException(Status.NOT_FOUND.withDescription("No group was found matching this name. $groupName"))
         val groupServers = serverRepository.findServersByGroup(group.name)
+            .filter { since == null || it.createdAt.isAfter(since) }
+
         if (groupServers.isEmpty()) {
             throw StatusException(Status.NOT_FOUND.withDescription("No server was found matching this group name. ${group.name}"))
         }
