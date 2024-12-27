@@ -201,6 +201,29 @@ class ServerService(
         return getServersByTypeResponse { servers.addAll(typeServers.map { it.toDefinition() }) }
     }
 
+    override suspend fun startMultipleServers(request: ControllerStartMultipleServersRequest): StartMultipleServerResponse {
+        val host = hostRepository.find(serverRepository)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("No server host found, could not start servers"))
+        val group = groupRepository.find(request.groupName)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("No group was found matching this name"))
+
+        val startedServers = mutableListOf<ServerDefinition>()
+
+        try {
+            for (i in 1..request.amount) {
+                val server = startServer(host, group)
+                publishServerStartEvents(server, request.startCause)
+                startedServers.add(server)
+            }
+        } catch (e: Exception) {
+            throw StatusException(Status.INTERNAL.withDescription("Error whilst starting multiple servers").withCause(e))
+        }
+
+        return StartMultipleServerResponse.newBuilder()
+            .addAllServers(startedServers)
+            .build()
+    }
+
     override suspend fun startServer(request: ControllerStartServerRequest): ServerDefinition {
         val host = hostRepository.find(serverRepository)
             ?: throw StatusException(Status.NOT_FOUND.withDescription("No server host found, could not start server"))
@@ -208,47 +231,8 @@ class ServerService(
             ?: throw StatusException(Status.NOT_FOUND.withDescription("No group was found matching this name"))
         try {
             val server = startServer(host, group)
-            pubSubClient.publish(
-                "event", ServerStartEvent.newBuilder()
-                    .setServer(server)
-                    .setStartedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
-                    .setStartCause(request.startCause)
-                    .build()
-            )
 
-            pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
-                metricType = "ACTIVITY_LOG"
-                metricValue = 1L
-                time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
-                meta.addAll(
-                    listOf(
-                        metricMeta {
-                            dataName = "displayName"
-                            dataValue = "${server.groupName} #${server.numericalId}"
-                        },
-                        metricMeta {
-                            dataName = "status"
-                            dataValue = "STARTED"
-                        },
-                        metricMeta {
-                            dataName = "resourceType"
-                            dataValue = "SERVER"
-                        },
-                        metricMeta {
-                            dataName = "groupName"
-                            dataValue = server.groupName
-                        },
-                        metricMeta {
-                            dataName = "numericalId"
-                            dataValue = server.numericalId.toString()
-                        },
-                        metricMeta {
-                            dataName = "by"
-                            dataValue = request.startCause.toString()
-                        }
-                    )
-                )
-            })
+            publishServerStartEvents(server, request.startCause)
 
             return server
         } catch (e: Exception) {
@@ -277,6 +261,50 @@ class ServerService(
             logger.error("Error whilst starting server:", e)
             throw e
         }
+    }
+
+    private suspend fun publishServerStartEvents(server: ServerDefinition, startCause: ServerStartCause) {
+        pubSubClient.publish(
+            "event", ServerStartEvent.newBuilder()
+                .setServer(server)
+                .setStartedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                .setStartCause(startCause)
+                .build()
+        )
+
+        pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+            metricType = "ACTIVITY_LOG"
+            metricValue = 1L
+            time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+            meta.addAll(
+                listOf(
+                    metricMeta {
+                        dataName = "displayName"
+                        dataValue = "${server.groupName} #${server.numericalId}"
+                    },
+                    metricMeta {
+                        dataName = "status"
+                        dataValue = "STARTED"
+                    },
+                    metricMeta {
+                        dataName = "resourceType"
+                        dataValue = "SERVER"
+                    },
+                    metricMeta {
+                        dataName = "groupName"
+                        dataValue = server.groupName
+                    },
+                    metricMeta {
+                        dataName = "numericalId"
+                        dataValue = server.numericalId.toString()
+                    },
+                    metricMeta {
+                        dataName = "by"
+                        dataValue = startCause.toString()
+                    }
+                )
+            )
+        })
     }
 
     private fun buildServer(group: Group, numericalId: Int): Server {
