@@ -17,7 +17,6 @@ import io.grpc.Status
 import io.grpc.StatusException
 import org.apache.logging.log4j.LogManager
 import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.*
 
 class ServerService(
@@ -334,7 +333,7 @@ class ServerService(
             ?: throw StatusException(Status.NOT_FOUND.withDescription("No server was found matching this id."))
 
         request.since?.let { sinceTimestamp ->
-            val sinceLocalDateTime = LocalDateTime.ofEpochSecond(sinceTimestamp.seconds, sinceTimestamp.nanos, ZoneOffset.UTC)
+            val sinceLocalDateTime = ProtobufTimestamp.toLocalDateTime(sinceTimestamp)
             if (server.createdAt.isBefore(sinceLocalDateTime)) {
                 return server.toDefinition()
             }
@@ -350,14 +349,14 @@ class ServerService(
 
     override suspend fun stopServersByGroupWithTimeout(request: StopServersByGroupWithTimeoutRequest): StopServersByGroupResponse {
         val sinceLocalDateTime = request.since?.let {
-            LocalDateTime.ofEpochSecond(it.seconds, it.nanos, ZoneOffset.UTC)
+            ProtobufTimestamp.toLocalDateTime(it)
         }
         return stopServersByGroup(request.groupName, request.timeoutSeconds, request.stopCause, sinceLocalDateTime)
     }
 
     override suspend fun stopServersByGroup(request: StopServersByGroupRequest): StopServersByGroupResponse {
         val sinceLocalDateTime = request.since?.let {
-            LocalDateTime.ofEpochSecond(it.seconds, it.nanos, ZoneOffset.UTC)
+            ProtobufTimestamp.toLocalDateTime(it)
         }
         return stopServersByGroup(request.groupName, null, request.stopCause, sinceLocalDateTime)
     }
