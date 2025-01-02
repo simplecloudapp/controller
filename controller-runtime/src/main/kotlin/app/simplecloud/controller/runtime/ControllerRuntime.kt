@@ -43,7 +43,7 @@ class ControllerRuntime(
     private val serverRepository = ServerRepository(database, numericalIdRepository)
     private val hostRepository = ServerHostRepository()
     private val serverHostAttacher = ServerHostAttacher(hostRepository, serverRepository)
-    private val dropletRepository = DropletRepository(authCallCredentials, serverHostAttacher, hostRepository)
+    private val dropletRepository = DropletRepository(authCallCredentials, serverHostAttacher, controllerStartCommand.envoyStartPort, hostRepository)
     private val pubSubService = PubSubService()
     private val controlPlaneServer = ControlPlaneServer(controllerStartCommand, dropletRepository)
     private val authServer = OAuthServer(controllerStartCommand, database)

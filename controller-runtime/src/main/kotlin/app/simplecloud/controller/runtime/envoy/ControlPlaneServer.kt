@@ -43,6 +43,15 @@ class ControlPlaneServer(private val args: ControllerStartCommand, private val d
                 envoyPort = 8080,
             )
         )
+        dropletRepository.save(
+            Droplet(
+                type = "auth",
+                id = "internal-auth",
+                host = args.grpcHost,
+                port = args.authorizationPort,
+                envoyPort = 8080
+            )
+        )
     }
 
     private fun register(builder: ServerBuilder<*>) {

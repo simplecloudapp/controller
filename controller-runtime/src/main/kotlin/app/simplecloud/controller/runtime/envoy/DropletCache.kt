@@ -31,23 +31,21 @@ import java.util.*
 /**
  * This class handles the remapping of the [DropletRepository] to a [SimpleCache] of [Snapshot]s, which are used by the envoy ADS service.
  */
-class DropletCache(private val dropletRepository: DropletRepository) {
+class DropletCache {
     private val cache = SimpleCache(SimpleCloudNodeGroup())
     private val logger = LogManager.getLogger(DropletCache::class.java)
 
     //Create a new Snapshot by the droplet repository's data
-    suspend fun update() {
+    fun update(droplets: List<Droplet>) {
         logger.info("Detected new droplets in DropletRepository, adding to ADS...")
         val clusters = mutableListOf<Cluster>()
         val listeners = mutableListOf<Listener>()
         val clas = mutableListOf<ClusterLoadAssignment>()
-
-        dropletRepository.getAll().forEach {
+        droplets.forEach {
             clusters.add(createCluster(it))
             listeners.add(createListener(it))
             clas.add(createCLA(it))
         }
-
         cache.setSnapshot(
             SimpleCloudNodeGroup.GROUP,
             Snapshot.create(

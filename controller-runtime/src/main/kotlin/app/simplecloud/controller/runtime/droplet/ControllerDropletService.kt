@@ -1,6 +1,5 @@
 package app.simplecloud.controller.runtime.droplet
 
-import app.simplecloud.controller.runtime.MetricsEventNames
 import app.simplecloud.droplet.api.droplet.Droplet
 import build.buf.gen.simplecloud.controller.v1.*
 import io.grpc.Status
