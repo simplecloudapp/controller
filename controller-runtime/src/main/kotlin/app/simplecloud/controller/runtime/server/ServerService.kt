@@ -379,8 +379,8 @@ class ServerService(
         val serverDefinitionList = mutableListOf<ServerDefinition>()
 
         try {
-            timeout?.let {
-                group.timeout = GroupTimeout(it);
+            if (timeout != null) {
+                group.timeout = GroupTimeout(timeout)
             }
 
             groupServers.forEach { server ->
