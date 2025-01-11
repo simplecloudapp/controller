@@ -20,7 +20,7 @@ interface ServerApi {
         /**
          * @return a [CompletableFuture] with the [Server] from the SIMPLECLOUD_UNIQUE_ID environment
          */
-        fun getThisServer(): CompletableFuture<Server> {
+        fun getCurrentServer(): CompletableFuture<Server> {
             return getServerById(System.getenv("SIMPLECLOUD_UNIQUE_ID"))
         }
 
@@ -134,7 +134,7 @@ interface ServerApi {
         /**
          * @return the [Server] from the SIMPLECLOUD_UNIQUE_ID environment
          */
-        suspend fun getThisServer(): Server {
+        suspend fun getCurrentServer(): Server {
             return getServerById(System.getenv("SIMPLECLOUD_UNIQUE_ID"))
         }
 
