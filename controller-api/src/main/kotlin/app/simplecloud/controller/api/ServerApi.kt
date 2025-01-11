@@ -18,6 +18,13 @@ interface ServerApi {
         fun getAllServers(): CompletableFuture<List<Server>>
 
         /**
+         * @return a [CompletableFuture] with the [Server] from the SIMPLECLOUD_UNIQUE_ID environment
+         */
+        fun thisServer(): CompletableFuture<Server> {
+            return getServerById(System.getenv("SIMPLECLOUD_UNIQUE_ID"))
+        }
+
+        /**
          * @param id the id of the server.
          * @return a [CompletableFuture] with the [Server].
          */
@@ -123,6 +130,13 @@ interface ServerApi {
          * @return a [List] of all [Server]s
          */
         suspend fun getAllServers(): List<Server>
+
+        /**
+         * @return the [Server] from the SIMPLECLOUD_UNIQUE_ID environment
+         */
+        suspend fun thisServer(): Server {
+            return getServerById(System.getenv("SIMPLECLOUD_UNIQUE_ID"))
+        }
 
         /**
          * @param id the id of the server.
