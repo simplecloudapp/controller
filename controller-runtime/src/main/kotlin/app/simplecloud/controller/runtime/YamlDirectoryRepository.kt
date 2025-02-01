@@ -140,7 +140,6 @@ abstract class YamlDirectoryRepository<E, I>(
                             if (entity != null) {
                                 watcherEvents.onDelete(entity)
                             }
-                            deleteFile(resolvedPath.toFile())
                         }
                     }
                 }

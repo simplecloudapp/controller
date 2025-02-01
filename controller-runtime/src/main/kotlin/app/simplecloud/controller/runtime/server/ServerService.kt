@@ -60,7 +60,7 @@ class ServerService(
             return stopServer(server.toDefinition(), request.stopCause)
         } catch (e: Exception) {
             throw StatusException(
-                Status.INTERNAL.withDescription("Error occured whilest cleaning up stopped server: ").withCause(e)
+                Status.INTERNAL.withDescription("Error occurred whilst cleaning up stopped server: ").withCause(e)
             )
         }
     }
@@ -216,7 +216,9 @@ class ServerService(
                 startedServers.add(server)
             }
         } catch (e: Exception) {
-            throw StatusException(Status.INTERNAL.withDescription("Error whilst starting multiple servers").withCause(e))
+            throw StatusException(
+                Status.INTERNAL.withDescription("Error whilst starting multiple servers").withCause(e)
+            )
         }
 
         return StartMultipleServerResponse.newBuilder()
@@ -245,7 +247,6 @@ class ServerService(
         val server = buildServer(group, numericalId)
         serverRepository.save(server)
         val stub = host.stub ?: throw StatusException(Status.INTERNAL.withDescription("Server host has no stub"))
-        serverRepository.save(server)
         try {
             val result = stub.startServer(
                 ServerHostStartServerRequest.newBuilder()
@@ -263,7 +264,7 @@ class ServerService(
         }
     }
 
-    private suspend fun publishServerStartEvents(server: ServerDefinition, startCause: ServerStartCause) {
+    private fun publishServerStartEvents(server: ServerDefinition, startCause: ServerStartCause) {
         pubSubClient.publish(
             "event", ServerStartEvent.newBuilder()
                 .setServer(server)
@@ -380,7 +381,7 @@ class ServerService(
 
         try {
             timeout?.let {
-                group.timeout = GroupTimeout(it);
+                group.timeout = GroupTimeout(it)
             }
 
             groupServers.forEach { server ->

@@ -22,13 +22,12 @@ class ServerRepository(
 ) : LoadableRepository<Server, String> {
 
     override suspend fun find(identifier: String): Server? {
-       return database.context.selectFrom(CLOUD_SERVERS)
+        return database.context.selectFrom(CLOUD_SERVERS)
             .where(CLOUD_SERVERS.UNIQUE_ID.eq(identifier))
             .limit(1)
             .awaitFirstOrNull()
             ?.let { record -> mapCloudServersRecordToServer(record) }
     }
-
 
     suspend fun findServerByNumerical(group: String, id: Int): Server? {
         return database.context.selectFrom(CLOUD_SERVERS)
@@ -121,7 +120,6 @@ class ServerRepository(
         }
     }
 
-    @Synchronized
     override fun save(element: Server) {
         numericalIdRepository.saveNumericalId(element.group, element.numericalId)
 
