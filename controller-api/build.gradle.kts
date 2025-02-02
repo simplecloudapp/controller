@@ -16,4 +16,5 @@ tasks.named("shadowJar", ShadowJar::class) {
     relocate("build.buf.gen.simplecloud", "app.simplecloud.buf")
 
     archiveFileName.set("${project.name}.jar")
+    archiveClassifier.set("")
 }

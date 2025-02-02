@@ -115,6 +115,7 @@ subprojects {
         named("shadowJar", ShadowJar::class) {
             mergeServiceFiles()
             archiveFileName.set("${project.name}.jar")
+            archiveClassifier.set("")
         }
 
         test {
