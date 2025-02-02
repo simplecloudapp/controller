@@ -8,6 +8,28 @@ plugins {
     `maven-publish`
 }
 
+fun determineVersion(): String {
+    val baseVersion = project.findProperty("baseVersion")?.toString() ?: "0.0.0"
+    val releaseType = project.findProperty("releaseType")?.toString() ?: "snapshot"
+    val commitHash = System.getenv("COMMIT_HASH") ?: "local"
+
+    return when (releaseType) {
+        "release" -> baseVersion
+        "rc" -> "$baseVersion-rc.$commitHash"
+        "snapshot" -> "$baseVersion-SNAPSHOT.$commitHash"
+        else -> "$baseVersion-SNAPSHOT.local"
+    }
+}
+
+fun determineRepositoryUrl(): String {
+    val baseUrl = "https://repo.simplecloud.app/"
+    return when (project.findProperty("releaseType")?.toString() ?: "snapshot") {
+        "release" -> "$baseUrl/releases"
+        "rc" -> "$baseUrl/rc"
+        else -> "$baseUrl/snapshots"
+    }
+}
+
 allprojects {
     group = "app.simplecloud.controller"
     version = determineVersion()
@@ -16,6 +38,11 @@ allprojects {
         mavenCentral()
         maven("https://buf.build/gen/maven")
         maven("https://repo.simplecloud.app/snapshots")
+    }
+
+    tasks.withType<JavaCompile> {
+        options.isFork = true
+        options.isIncremental = true
     }
 }
 
@@ -35,14 +62,12 @@ subprojects {
             maven {
                 name = "simplecloud"
                 url = uri(determineRepositoryUrl())
-
                 credentials {
                     username = System.getenv("SIMPLECLOUD_USERNAME")
                         ?: (project.findProperty("simplecloudUsername") as? String)
                     password = System.getenv("SIMPLECLOUD_PASSWORD")
                         ?: (project.findProperty("simplecloudPassword") as? String)
                 }
-
                 authentication {
                     create<BasicAuthentication>("basic")
                 }
@@ -55,7 +80,7 @@ subprojects {
             }
 
             create<MavenPublication>("mavenJava") {
-                from(components["java"])
+                artifact(tasks.named("shadowJar"))
             }
         }
     }
@@ -66,10 +91,22 @@ subprojects {
 
     kotlin {
         jvmToolchain(21)
+
         compilerOptions {
+            languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
             apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
             jvmTarget.set(JvmTarget.JVM_21)
         }
+    }
+
+    tasks.named("shadowJar", ShadowJar::class) {
+        mergeServiceFiles()
+        archiveFileName.set("${project.name}.jar")
+        archiveClassifier.set("")
+    }
+
+    tasks.test {
+        useJUnitPlatform()
     }
 
     centralPortal {
@@ -106,24 +143,6 @@ subprojects {
         }
     }
 
-    tasks {
-        withType<JavaCompile> {
-            options.isFork = true
-            options.isIncremental = true
-        }
-
-        named("shadowJar", ShadowJar::class) {
-            mergeServiceFiles()
-            archiveFileName.set("${project.name}.jar")
-            archiveClassifier.set("")
-        }
-
-        test {
-            useJUnitPlatform()
-        }
-    }
-
-
     signing {
         val releaseType = project.findProperty("releaseType")?.toString() ?: "snapshot"
         if (releaseType != "release") {
@@ -132,27 +151,5 @@ subprojects {
 
         sign(publishing.publications)
         useGpgCmd()
-    }
-}
-
-fun determineVersion(): String {
-    val baseVersion = project.findProperty("baseVersion")?.toString() ?: "0.0.0"
-    val releaseType = project.findProperty("releaseType")?.toString() ?: "snapshot"
-    val commitHash = System.getenv("COMMIT_HASH") ?: "local"
-
-    return when (releaseType) {
-        "release" -> baseVersion
-        "rc" -> "$baseVersion-rc.$commitHash"
-        "snapshot" -> "$baseVersion-SNAPSHOT.$commitHash"
-        else -> "$baseVersion-SNAPSHOT.local"
-    }
-}
-
-fun determineRepositoryUrl(): String {
-    val baseUrl = "https://repo.simplecloud.app"
-    return when (project.findProperty("releaseType")?.toString() ?: "snapshot") {
-        "release" -> "$baseUrl/releases"
-        "rc" -> "$baseUrl/rc"
-        else -> "$baseUrl/snapshots"
     }
 }
