@@ -8,28 +8,6 @@ plugins {
     `maven-publish`
 }
 
-fun determineVersion(): String {
-    val baseVersion = project.findProperty("baseVersion")?.toString() ?: "0.0.0"
-    val releaseType = project.findProperty("releaseType")?.toString() ?: "snapshot"
-    val commitHash = System.getenv("COMMIT_HASH") ?: "local"
-
-    return when (releaseType) {
-        "release" -> baseVersion
-        "rc" -> "$baseVersion-rc.$commitHash"
-        "snapshot" -> "$baseVersion-SNAPSHOT.$commitHash"
-        else -> "$baseVersion-SNAPSHOT.local"
-    }
-}
-
-fun determineRepositoryUrl(): String {
-    val baseUrl = "https://repo.simplecloud.app/"
-    return when (project.findProperty("releaseType")?.toString() ?: "snapshot") {
-        "release" -> "$baseUrl/releases"
-        "rc" -> "$baseUrl/rc"
-        else -> "$baseUrl/snapshots"
-    }
-}
-
 allprojects {
     group = "app.simplecloud.controller"
     version = determineVersion()
@@ -149,7 +127,36 @@ subprojects {
             return@signing
         }
 
+        if (hasProperty("signingPassphrase")) {
+            val signingKey: String? by project
+            val signingPassphrase: String? by project
+            useInMemoryPgpKeys(signingKey, signingPassphrase)
+        } else {
+            useGpgCmd()
+        }
+
         sign(publishing.publications)
-        useGpgCmd()
+    }
+}
+
+fun determineVersion(): String {
+    val baseVersion = project.findProperty("baseVersion")?.toString() ?: "0.0.0"
+    val releaseType = project.findProperty("releaseType")?.toString() ?: "snapshot"
+    val commitHash = System.getenv("COMMIT_HASH") ?: "local"
+
+    return when (releaseType) {
+        "release" -> baseVersion
+        "rc" -> "$baseVersion-rc.$commitHash"
+        "snapshot" -> "$baseVersion-SNAPSHOT.$commitHash"
+        else -> "$baseVersion-SNAPSHOT.local"
+    }
+}
+
+fun determineRepositoryUrl(): String {
+    val baseUrl = "https://repo.simplecloud.app/"
+    return when (project.findProperty("releaseType")?.toString() ?: "snapshot") {
+        "release" -> "$baseUrl/releases"
+        "rc" -> "$baseUrl/rc"
+        else -> "$baseUrl/snapshots"
     }
 }

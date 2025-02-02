@@ -3,8 +3,8 @@ name: Build and Deploy
 on:
   push:
     branches:
-      - develop  # For snapshot builds
-      - main    # For release builds
+      - develop
+      - main
     paths-ignore:
       - '**.md'
       - '.gitignore'
@@ -97,13 +97,25 @@ jobs:
 
       - name: Publish to SimpleCloud Repository
         run: |
-          ./gradlew --parallel --build-cache publishMavenJavaPublicationToSimplecloudRepository \
-            -PreleaseType=${{ steps.version.outputs.CHANNEL }} \
-            -Pversion=${{ steps.version.outputs.VERSION }}
+          if [[ "${{ steps.version.outputs.CHANNEL }}" == "release" ]]; then
+            export GPG_TTY=$(tty)
+            export GRADLE_OPTS="-Dorg.gradle.daemon=false"
+            ./gradlew --no-daemon --parallel --build-cache publishMavenJavaPublicationToSimplecloudRepository \
+              -PreleaseType=${{ steps.version.outputs.CHANNEL }} \
+              -Pversion=${{ steps.version.outputs.VERSION }} \
+              -Psigning.gnupg.keyName="${{ secrets.GPG_KEY_ID }}" \
+              -Psigning.gnupg.passphrase="${{ secrets.GPG_PASSPHRASE }}"
+          else
+            ./gradlew --parallel --build-cache publishMavenJavaPublicationToSimplecloudRepository \
+              -PreleaseType=${{ steps.version.outputs.CHANNEL }} \
+              -Pversion=${{ steps.version.outputs.VERSION }}
+          fi
         env:
           COMMIT_HASH: ${{ env.COMMIT_HASH }}
           SIMPLECLOUD_USERNAME: ${{ secrets.SIMPLECLOUD_USERNAME }}
           SIMPLECLOUD_PASSWORD: ${{ secrets.SIMPLECLOUD_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingPassphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Prepare Artifacts
         run: |
