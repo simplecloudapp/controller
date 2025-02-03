@@ -15,8 +15,11 @@ data class Group(
     val maxOnlineCount: Long = 0,
     val maxPlayers: Long = 0,
     val newServerPlayerRatio: Long = -1,
-    val properties: Map<String, String> = mapOf()
+    val properties: Map<String, String> = mutableMapOf()
 ) {
+
+    @Transient
+    var timeout: GroupTimeout? = null
 
     fun toDefinition(): GroupDefinition {
         return GroupDefinition.newBuilder()

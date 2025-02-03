@@ -1,12 +1,10 @@
 package app.simplecloud.controller.shared.server
 
-import app.simplecloud.controller.shared.time.ProtoBufTimestamp
+import app.simplecloud.droplet.api.time.ProtobufTimestamp
 import build.buf.gen.simplecloud.controller.v1.ServerDefinition
 import build.buf.gen.simplecloud.controller.v1.ServerState
 import build.buf.gen.simplecloud.controller.v1.ServerType
-import java.time.Instant
 import java.time.LocalDateTime
-import java.time.ZoneId
 
 data class Server(
     val uniqueId: String,
@@ -40,8 +38,8 @@ data class Server(
             .setMaxPlayers(maxPlayers)
             .putAllCloudProperties(properties)
             .setNumericalId(numericalId)
-            .setCreatedAt(ProtoBufTimestamp.fromLocalDateTime(createdAt))
-            .setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(updatedAt))
+            .setCreatedAt(ProtobufTimestamp.fromLocalDateTime(createdAt))
+            .setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(updatedAt))
             .build()
     }
 
@@ -83,8 +81,8 @@ data class Server(
                 serverDefinition.playerCount,
                 serverDefinition.cloudPropertiesMap,
                 serverDefinition.serverState,
-                ProtoBufTimestamp.toLocalDateTime(serverDefinition.createdAt),
-                ProtoBufTimestamp.toLocalDateTime(serverDefinition.updatedAt),
+                ProtobufTimestamp.toLocalDateTime(serverDefinition.createdAt),
+                ProtobufTimestamp.toLocalDateTime(serverDefinition.updatedAt),
             )
         }
 

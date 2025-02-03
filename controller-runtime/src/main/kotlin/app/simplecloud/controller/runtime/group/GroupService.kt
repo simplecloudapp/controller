@@ -12,7 +12,7 @@ class GroupService(
     override suspend fun getGroupByName(request: GetGroupByNameRequest): GetGroupByNameResponse {
         val group = groupRepository.find(request.groupName)
             ?: throw StatusException(Status.NOT_FOUND.withDescription("This group does not exist"))
-        return getGroupByNameResponse { group.toDefinition() }
+        return getGroupByNameResponse { this.group = group.toDefinition() }
     }
 
     override suspend fun getAllGroups(request: GetAllGroupsRequest): GetAllGroupsResponse {
@@ -34,6 +34,11 @@ class GroupService(
         groupRepository.find(request.group.name)
             ?: throw StatusException(Status.NOT_FOUND.withDescription("This group does not exist"))
         val group = Group.fromDefinition(request.group)
+
+        if (group.minMemory > group.maxMemory) {
+            throw StatusException(Status.INVALID_ARGUMENT.withDescription("Minimum memory must be smaller than maximum memory"))
+        }
+
         try {
             groupRepository.save(group)
         } catch (e: Exception) {
@@ -47,6 +52,11 @@ class GroupService(
             throw StatusException(Status.NOT_FOUND.withDescription("This group already exists"))
         }
         val group = Group.fromDefinition(request.group)
+
+        if (group.minMemory > group.maxMemory) {
+            throw StatusException(Status.INVALID_ARGUMENT.withDescription("Minimum memory must be smaller than maximum memory"))
+        }
+
         try {
             groupRepository.save(group)
         } catch (e: Exception) {

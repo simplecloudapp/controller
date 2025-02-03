@@ -1,10 +1,10 @@
 package app.simplecloud.controller.api.impl.coroutines
 
 import app.simplecloud.controller.api.ServerApi
-import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.group.Group
-import build.buf.gen.simplecloud.controller.v1.*
 import app.simplecloud.controller.shared.server.Server
+import app.simplecloud.droplet.api.auth.AuthCallCredentials
+import build.buf.gen.simplecloud.controller.v1.*
 import io.grpc.ManagedChannel
 
 class ServerApiCoroutineImpl(
@@ -13,7 +13,8 @@ class ServerApiCoroutineImpl(
 ) : ServerApi.Coroutine {
 
     private val serverServiceStub: ControllerServerServiceGrpcKt.ControllerServerServiceCoroutineStub =
-        ControllerServerServiceGrpcKt.ControllerServerServiceCoroutineStub(managedChannel).withCallCredentials(authCallCredentials)
+        ControllerServerServiceGrpcKt.ControllerServerServiceCoroutineStub(managedChannel)
+            .withCallCredentials(authCallCredentials)
 
     override suspend fun getAllServers(): List<Server> {
         return serverServiceStub.getAllServers(getAllServersRequest {}).serversList.map {
@@ -98,6 +99,25 @@ class ServerApiCoroutineImpl(
                 }
             )
         )
+    }
+
+    override suspend fun stopServers(groupName: String, stopCause: ServerStopCause): List<Server> {
+        return serverServiceStub.stopServersByGroup(stopServersByGroupRequest {
+            this.groupName = groupName
+            this.stopCause = stopCause
+        }).serversList.map {
+            Server.fromDefinition(it)
+        }
+    }
+
+    override suspend fun stopServers(groupName: String, timeoutSeconds: Int, stopCause: ServerStopCause): List<Server> {
+        return serverServiceStub.stopServersByGroupWithTimeout(stopServersByGroupWithTimeoutRequest {
+            this.groupName = groupName
+            this.stopCause = stopCause
+            this.timeoutSeconds = timeoutSeconds
+        }).serversList.map {
+            Server.fromDefinition(it)
+        }
     }
 
     override suspend fun updateServerState(id: String, state: ServerState): Server {

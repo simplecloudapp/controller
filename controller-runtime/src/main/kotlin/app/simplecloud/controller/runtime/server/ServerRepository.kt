@@ -18,7 +18,7 @@ import java.time.LocalDateTime
 
 class ServerRepository(
     private val database: Database,
-    private val numericalIdRepository: ServerNumericalIdRepository
+    private val numericalIdRepository: ServerNumericalIdRepository,
 ) : LoadableRepository<Server, String> {
 
     override suspend fun find(identifier: String): Server? {

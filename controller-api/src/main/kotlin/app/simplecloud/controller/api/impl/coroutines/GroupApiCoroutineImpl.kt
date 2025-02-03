@@ -1,8 +1,8 @@
 package app.simplecloud.controller.api.impl.coroutines
 
 import app.simplecloud.controller.api.GroupApi
-import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.group.Group
+import app.simplecloud.droplet.api.auth.AuthCallCredentials
 import build.buf.gen.simplecloud.controller.v1.*
 import io.grpc.ManagedChannel
 

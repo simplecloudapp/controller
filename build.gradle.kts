@@ -3,17 +3,22 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     alias(libs.plugins.kotlin)
     alias(libs.plugins.shadow)
-    alias(libs.plugins.sonatypeCentralPortalPublisher)
+    alias(libs.plugins.sonatype.central.portal.publisher)
     `maven-publish`
 }
 
+val baseVersion = "0.0.30"
+val commitHash = System.getenv("COMMIT_HASH")
+val snapshotversion = "${baseVersion}-dev.$commitHash"
+
 allprojects {
     group = "app.simplecloud.controller"
-    version = "0.0.30"
+    version = if (commitHash != null) snapshotversion else baseVersion
 
     repositories {
         mavenCentral()
         maven("https://buf.build/gen/maven")
+        maven("https://repo.simplecloud.app/snapshots")
     }
 }
 
@@ -24,12 +29,31 @@ subprojects {
     apply(plugin = "maven-publish")
 
     dependencies {
-        testImplementation(rootProject.libs.kotlinTest)
-        implementation(rootProject.libs.kotlinJvm)
+        testImplementation(rootProject.libs.kotlin.test)
+        implementation(rootProject.libs.kotlin.jvm)
     }
 
     publishing {
+        repositories {
+            maven {
+                name = "simplecloud"
+                url = uri("https://repo.simplecloud.app/snapshots/")
+                credentials {
+                    username = System.getenv("SIMPLECLOUD_USERNAME")?: (project.findProperty("simplecloudUsername") as? String)
+                    password = System.getenv("SIMPLECLOUD_PASSWORD")?: (project.findProperty("simplecloudPassword") as? String)
+                }
+                authentication {
+                    create<BasicAuthentication>("basic")
+                }
+            }
+        }
+
         publications {
+            // Not publish controller-runtime
+            if (project.name == "controller-runtime") {
+                return@publications
+            }
+
             create<MavenPublication>("mavenJava") {
                 from(components["java"])
             }
@@ -91,6 +115,10 @@ subprojects {
     }
 
     signing {
+        if (commitHash != null) {
+            return@signing
+        }
+
         sign(publishing.publications)
         useGpgCmd()
     }

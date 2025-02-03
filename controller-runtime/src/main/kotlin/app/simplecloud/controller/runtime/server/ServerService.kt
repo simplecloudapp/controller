@@ -1,17 +1,20 @@
 package app.simplecloud.controller.runtime.server
 
+import app.simplecloud.controller.runtime.MetricsEventNames
 import app.simplecloud.controller.runtime.group.GroupRepository
 import app.simplecloud.controller.runtime.host.ServerHostRepository
-import app.simplecloud.controller.shared.auth.AuthCallCredentials
 import app.simplecloud.controller.shared.group.Group
+import app.simplecloud.controller.shared.group.GroupTimeout
 import app.simplecloud.controller.shared.host.ServerHost
 import app.simplecloud.controller.shared.server.Server
-import app.simplecloud.controller.shared.time.ProtoBufTimestamp
+import app.simplecloud.droplet.api.auth.AuthCallCredentials
+import app.simplecloud.droplet.api.time.ProtobufTimestamp
 import app.simplecloud.pubsub.PubSubClient
 import build.buf.gen.simplecloud.controller.v1.*
+import build.buf.gen.simplecloud.metrics.v1.metric
+import build.buf.gen.simplecloud.metrics.v1.metricMeta
 import io.grpc.Status
 import io.grpc.StatusException
-import kotlinx.coroutines.coroutineScope
 import org.apache.logging.log4j.LogManager
 import java.time.LocalDateTime
 import java.util.*
@@ -21,35 +24,20 @@ class ServerService(
     private val serverRepository: ServerRepository,
     private val hostRepository: ServerHostRepository,
     private val groupRepository: GroupRepository,
-    private val forwardingSecret: String,
     private val authCallCredentials: AuthCallCredentials,
     private val pubSubClient: PubSubClient,
+    private val serverHostAttacher: ServerHostAttacher,
 ) : ControllerServerServiceGrpcKt.ControllerServerServiceCoroutineImplBase() {
 
     private val logger = LogManager.getLogger(ServerService::class.java)
 
+    @Deprecated("This method will be removed soon. Please use DropletService#registerDroplet")
     override suspend fun attachServerHost(request: AttachServerHostRequest): ServerHostDefinition {
         val serverHost = ServerHost.fromDefinition(request.serverHost, authCallCredentials)
         try {
-            hostRepository.delete(serverHost)
-            hostRepository.save(serverHost)
+            serverHostAttacher.attach(serverHost)
         } catch (e: Exception) {
-            throw StatusException(Status.INTERNAL.withDescription("Could not save serverhost").withCause(e))
-        }
-        logger.info("Successfully registered ServerHost ${serverHost.id}.")
-
-        coroutineScope {
-            serverRepository.findServersByHostId(serverHost.id).forEach { server ->
-                logger.info("Reattaching Server ${server.uniqueId} of group ${server.group}...")
-                try {
-                    val result = serverHost.stub.reattachServer(server.toDefinition())
-                    serverRepository.save(Server.fromDefinition(result))
-                    logger.info("Success!")
-                } catch (e: Exception) {
-                    logger.error("Server was found to be offline, unregistering...")
-                    serverRepository.delete(server)
-                }
-            }
+            throw StatusException(Status.INTERNAL.withDescription("Could not attach serverhost").withCause(e))
         }
         return serverHost.toDefinition()
     }
@@ -84,12 +72,51 @@ class ServerService(
             try {
                 val before = serverRepository.find(server.uniqueId)
                     ?: throw StatusException(Status.NOT_FOUND.withDescription("Server not found"))
-                pubSubClient.publish(
-                    "event",
-                    ServerUpdateEvent.newBuilder()
-                        .setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
-                        .setServerBefore(before.toDefinition()).setServerAfter(request.server).build()
-                )
+                val wasUpdated = before != server
+
+                if (wasUpdated) {
+                    pubSubClient.publish(
+                        "event",
+                        ServerUpdateEvent.newBuilder()
+                            .setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                            .setServerBefore(before.toDefinition()).setServerAfter(request.server).build()
+                    )
+
+                    pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+                        metricType = "ACTIVITY_LOG"
+                        metricValue = 1L
+                        time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+                        meta.addAll(
+                            listOf(
+                                metricMeta {
+                                    dataName = "displayName"
+                                    dataValue = "${server.group} #${server.numericalId}"
+                                },
+                                metricMeta {
+                                    dataName = "status"
+                                    dataValue = "EDITED"
+                                },
+                                metricMeta {
+                                    dataName = "resourceType"
+                                    dataValue = "SERVER"
+                                },
+                                metricMeta {
+                                    dataName = "groupName"
+                                    dataValue = server.group
+                                },
+                                metricMeta {
+                                    dataName = "numericalId"
+                                    dataValue = server.numericalId.toString()
+                                },
+                                metricMeta {
+                                    dataName = "by"
+                                    dataValue = "API"
+                                }
+                            )
+                        )
+                    })
+                }
+
                 serverRepository.save(server)
                 return server.toDefinition()
             } catch (e: Exception) {
@@ -112,11 +139,46 @@ class ServerService(
             pubSubClient.publish(
                 "event", ServerStopEvent.newBuilder()
                     .setServer(request.server)
-                    .setStoppedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setStoppedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                     .setStopCause(ServerStopCause.NATURAL_STOP)
                     .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
                     .build()
             )
+
+            pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+                metricType = "ACTIVITY_LOG"
+                metricValue = 1L
+                time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+                meta.addAll(
+                    listOf(
+                        metricMeta {
+                            dataName = "displayName"
+                            dataValue = "${server.group} #${server.numericalId}"
+                        },
+                        metricMeta {
+                            dataName = "status"
+                            dataValue = "STOPPED"
+                        },
+                        metricMeta {
+                            dataName = "resourceType"
+                            dataValue = "SERVER"
+                        },
+                        metricMeta {
+                            dataName = "groupName"
+                            dataValue = server.group
+                        },
+                        metricMeta {
+                            dataName = "numericalId"
+                            dataValue = server.numericalId.toString()
+                        },
+                        metricMeta {
+                            dataName = "by"
+                            dataValue = ServerStopCause.NATURAL_STOP.toString()
+                        }
+                    )
+                )
+            })
+
             return server.toDefinition()
         }
     }
@@ -139,6 +201,29 @@ class ServerService(
         return getServersByTypeResponse { servers.addAll(typeServers.map { it.toDefinition() }) }
     }
 
+    override suspend fun startMultipleServers(request: ControllerStartMultipleServersRequest): StartMultipleServerResponse {
+        val host = hostRepository.find(serverRepository)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("No server host found, could not start servers"))
+        val group = groupRepository.find(request.groupName)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("No group was found matching this name"))
+
+        val startedServers = mutableListOf<ServerDefinition>()
+
+        try {
+            for (i in 1..request.amount) {
+                val server = startServer(host, group)
+                publishServerStartEvents(server, request.startCause)
+                startedServers.add(server)
+            }
+        } catch (e: Exception) {
+            throw StatusException(Status.INTERNAL.withDescription("Error whilst starting multiple servers").withCause(e))
+        }
+
+        return StartMultipleServerResponse.newBuilder()
+            .addAllServers(startedServers)
+            .build()
+    }
+
     override suspend fun startServer(request: ControllerStartServerRequest): ServerDefinition {
         val host = hostRepository.find(serverRepository)
             ?: throw StatusException(Status.NOT_FOUND.withDescription("No server host found, could not start server"))
@@ -146,13 +231,9 @@ class ServerService(
             ?: throw StatusException(Status.NOT_FOUND.withDescription("No group was found matching this name"))
         try {
             val server = startServer(host, group)
-            pubSubClient.publish(
-                "event", ServerStartEvent.newBuilder()
-                    .setServer(server)
-                    .setStartedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
-                    .setStartCause(request.startCause)
-                    .build()
-            )
+
+            publishServerStartEvents(server, request.startCause)
+
             return server
         } catch (e: Exception) {
             throw StatusException(Status.INTERNAL.withDescription("Error whilst starting server").withCause(e))
@@ -161,9 +242,9 @@ class ServerService(
 
     private suspend fun startServer(host: ServerHost, group: Group): ServerDefinition {
         val numericalId = numericalIdRepository.findNextNumericalId(group.name)
-        val server = buildServer(group, numericalId, forwardingSecret)
+        val server = buildServer(group, numericalId)
         serverRepository.save(server)
-        val stub = host.stub
+        val stub = host.stub ?: throw StatusException(Status.INTERNAL.withDescription("Server host has no stub"))
         serverRepository.save(server)
         try {
             val result = stub.startServer(
@@ -182,7 +263,51 @@ class ServerService(
         }
     }
 
-    private fun buildServer(group: Group, numericalId: Int, forwardingSecret: String): Server {
+    private suspend fun publishServerStartEvents(server: ServerDefinition, startCause: ServerStartCause) {
+        pubSubClient.publish(
+            "event", ServerStartEvent.newBuilder()
+                .setServer(server)
+                .setStartedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                .setStartCause(startCause)
+                .build()
+        )
+
+        pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+            metricType = "ACTIVITY_LOG"
+            metricValue = 1L
+            time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+            meta.addAll(
+                listOf(
+                    metricMeta {
+                        dataName = "displayName"
+                        dataValue = "${server.groupName} #${server.numericalId}"
+                    },
+                    metricMeta {
+                        dataName = "status"
+                        dataValue = "STARTED"
+                    },
+                    metricMeta {
+                        dataName = "resourceType"
+                        dataValue = "SERVER"
+                    },
+                    metricMeta {
+                        dataName = "groupName"
+                        dataValue = server.groupName
+                    },
+                    metricMeta {
+                        dataName = "numericalId"
+                        dataValue = server.numericalId.toString()
+                    },
+                    metricMeta {
+                        dataName = "by"
+                        dataValue = startCause.toString()
+                    }
+                )
+            )
+        })
+    }
+
+    private fun buildServer(group: Group, numericalId: Int): Server {
         return Server.fromDefinition(
             ServerDefinition.newBuilder()
                 .setNumericalId(numericalId)
@@ -192,13 +317,12 @@ class ServerService(
                 .setMaximumMemory(group.maxMemory)
                 .setServerState(ServerState.PREPARING)
                 .setMaxPlayers(group.maxPlayers)
-                .setCreatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
-                .setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                .setCreatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                .setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                 .setPlayerCount(0)
                 .setUniqueId(UUID.randomUUID().toString().replace("-", "")).putAllCloudProperties(
                     mapOf(
-                        *group.properties.entries.map { it.key to it.value }.toTypedArray(),
-                        "forwarding-secret" to forwardingSecret
+                        *group.properties.entries.map { it.key to it.value }.toTypedArray()
                     )
                 ).build()
         )
@@ -207,6 +331,14 @@ class ServerService(
     override suspend fun stopServer(request: StopServerRequest): ServerDefinition {
         val server = serverRepository.find(request.serverId)
             ?: throw StatusException(Status.NOT_FOUND.withDescription("No server was found matching this id."))
+
+        request.since?.let { sinceTimestamp ->
+            val sinceLocalDateTime = ProtobufTimestamp.toLocalDateTime(sinceTimestamp)
+            if (server.createdAt.isBefore(sinceLocalDateTime)) {
+                return server.toDefinition()
+            }
+        }
+
         try {
             val stopped = stopServer(server.toDefinition(), request.stopCause)
             return stopped
@@ -215,22 +347,106 @@ class ServerService(
         }
     }
 
-    private suspend fun stopServer(server: ServerDefinition, cause: ServerStopCause = ServerStopCause.NATURAL_STOP): ServerDefinition {
+    override suspend fun stopServersByGroupWithTimeout(request: StopServersByGroupWithTimeoutRequest): StopServersByGroupResponse {
+        val sinceLocalDateTime = request.since?.let {
+            ProtobufTimestamp.toLocalDateTime(it)
+        }
+        return stopServersByGroup(request.groupName, request.timeoutSeconds, request.stopCause, sinceLocalDateTime)
+    }
+
+    override suspend fun stopServersByGroup(request: StopServersByGroupRequest): StopServersByGroupResponse {
+        val sinceLocalDateTime = request.since?.let {
+            ProtobufTimestamp.toLocalDateTime(it)
+        }
+        return stopServersByGroup(request.groupName, null, request.stopCause, sinceLocalDateTime)
+    }
+
+    private suspend fun stopServersByGroup(
+        groupName: String,
+        timeout: Int?,
+        cause: ServerStopCause = ServerStopCause.NATURAL_STOP,
+        since: LocalDateTime? = null
+    ): StopServersByGroupResponse {
+        val group = groupRepository.find(groupName)
+            ?: throw StatusException(Status.NOT_FOUND.withDescription("No group was found matching this name. $groupName"))
+        val groupServers = serverRepository.findServersByGroup(group.name)
+            .filter { since == null || it.createdAt.isAfter(since) }
+
+        if (groupServers.isEmpty()) {
+            throw StatusException(Status.NOT_FOUND.withDescription("No server was found matching this group name. ${group.name}"))
+        }
+
+        val serverDefinitionList = mutableListOf<ServerDefinition>()
+
+        try {
+            timeout?.let {
+                group.timeout = GroupTimeout(it);
+            }
+
+            groupServers.forEach { server ->
+                serverDefinitionList.add(stopServer(server.toDefinition(), cause))
+            }
+
+            return stopServersByGroupResponse { servers.addAll(serverDefinitionList) }
+        } catch (e: Exception) {
+            throw StatusException(Status.INTERNAL.withDescription("Error whilst stopping server by group").withCause(e))
+        }
+    }
+
+    private suspend fun stopServer(
+        server: ServerDefinition,
+        cause: ServerStopCause = ServerStopCause.NATURAL_STOP
+    ): ServerDefinition {
         val host = hostRepository.findServerHostById(server.hostId)
             ?: throw Status.NOT_FOUND
                 .withDescription("No server host was found matching this server.")
                 .asRuntimeException()
-        val stub = host.stub
+        val stub = host.stub ?: throw StatusException(Status.INTERNAL.withDescription("Server host has no stub"))
         try {
             val stopped = stub.stopServer(server)
             pubSubClient.publish(
                 "event", ServerStopEvent.newBuilder()
                     .setServer(stopped)
-                    .setStoppedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setStoppedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                     .setStopCause(cause)
                     .setTerminationMode(ServerTerminationMode.UNKNOWN_MODE) //TODO: Add proto fields to make changing this possible
                     .build()
             )
+
+            pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+                metricType = "ACTIVITY_LOG"
+                metricValue = 1L
+                time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+                meta.addAll(
+                    listOf(
+                        metricMeta {
+                            dataName = "displayName"
+                            dataValue = "${server.groupName} #${server.numericalId}"
+                        },
+                        metricMeta {
+                            dataName = "status"
+                            dataValue = "STOPPED"
+                        },
+                        metricMeta {
+                            dataName = "resourceType"
+                            dataValue = "SERVER"
+                        },
+                        metricMeta {
+                            dataName = "groupName"
+                            dataValue = server.groupName
+                        },
+                        metricMeta {
+                            dataName = "numericalId"
+                            dataValue = server.numericalId.toString()
+                        },
+                        metricMeta {
+                            dataName = "by"
+                            dataValue = cause.toString()
+                        }
+                    )
+                )
+            })
+
             serverRepository.delete(Server.fromDefinition(stopped))
             return stopped
         } catch (e: Exception) {
@@ -242,14 +458,55 @@ class ServerService(
     override suspend fun updateServerProperty(request: UpdateServerPropertyRequest): ServerDefinition {
         val server = serverRepository.find(request.serverId)
             ?: throw StatusException(Status.NOT_FOUND.withDescription("Server with id ${request.serverId} does not exist."))
-        val serverBefore = server.copy()
+        val serverBefore = Server.fromDefinition(server.toDefinition())
         server.properties[request.propertyKey] = request.propertyValue
         serverRepository.save(server)
-        pubSubClient.publish(
-            "event",
-            ServerUpdateEvent.newBuilder().setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
-                .setServerBefore(serverBefore.toDefinition()).setServerAfter(server.toDefinition()).build()
-        )
+
+        if (serverBefore.properties[request.propertyKey] != server.properties[request.propertyKey]) {
+            pubSubClient.publish(
+                "event",
+                ServerUpdateEvent.newBuilder()
+                    .setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+                    .setServerBefore(serverBefore.toDefinition())
+                    .setServerAfter(server.toDefinition())
+                    .build()
+            )
+
+            pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+                metricType = "ACTIVITY_LOG"
+                metricValue = 1L
+                time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+                meta.addAll(
+                    listOf(
+                        metricMeta {
+                            dataName = "displayName"
+                            dataValue = "${server.group} #${server.numericalId}"
+                        },
+                        metricMeta {
+                            dataName = "status"
+                            dataValue = "EDITED"
+                        },
+                        metricMeta {
+                            dataName = "resourceType"
+                            dataValue = "SERVER"
+                        },
+                        metricMeta {
+                            dataName = "groupName"
+                            dataValue = server.group
+                        },
+                        metricMeta {
+                            dataName = "numericalId"
+                            dataValue = server.numericalId.toString()
+                        },
+                        metricMeta {
+                            dataName = "by"
+                            dataValue = "API"
+                        }
+                    )
+                )
+            })
+        }
+
         return server.toDefinition()
     }
 
@@ -261,9 +518,44 @@ class ServerService(
         serverRepository.save(server)
         pubSubClient.publish(
             "event",
-            ServerUpdateEvent.newBuilder().setUpdatedAt(ProtoBufTimestamp.fromLocalDateTime(LocalDateTime.now()))
+            ServerUpdateEvent.newBuilder().setUpdatedAt(ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now()))
                 .setServerBefore(serverBefore.toDefinition()).setServerAfter(server.toDefinition()).build()
         )
+
+        pubSubClient.publish(MetricsEventNames.RECORD_METRIC, metric {
+            metricType = "ACTIVITY_LOG"
+            metricValue = 1L
+            time = ProtobufTimestamp.fromLocalDateTime(LocalDateTime.now())
+            meta.addAll(
+                listOf(
+                    metricMeta {
+                        dataName = "displayName"
+                        dataValue = "${server.group} #${server.numericalId}"
+                    },
+                    metricMeta {
+                        dataName = "status"
+                        dataValue = "EDITED"
+                    },
+                    metricMeta {
+                        dataName = "resourceType"
+                        dataValue = "SERVER"
+                    },
+                    metricMeta {
+                        dataName = "groupName"
+                        dataValue = server.group
+                    },
+                    metricMeta {
+                        dataName = "numericalId"
+                        dataValue = server.numericalId.toString()
+                    },
+                    metricMeta {
+                        dataName = "by"
+                        dataValue = "API"
+                    }
+                )
+            )
+        })
+
         return server.toDefinition()
     }
 
