@@ -30,30 +30,6 @@ subprojects {
         implementation(rootProject.libs.kotlin.jvm)
     }
 
-    publishing {
-        repositories {
-            maven {
-                name = "simplecloud"
-                url = uri(determineRepositoryUrl())
-                credentials {
-                    username = System.getenv("SIMPLECLOUD_USERNAME")
-                        ?: (project.findProperty("simplecloudUsername") as? String)
-                    password = System.getenv("SIMPLECLOUD_PASSWORD")
-                        ?: (project.findProperty("simplecloudPassword") as? String)
-                }
-                authentication {
-                    create<BasicAuthentication>("basic")
-                }
-            }
-        }
-
-        publications {
-            create<MavenPublication>("mavenJava") {
-                from(components["java"])
-            }
-        }
-    }
-
     java {
         toolchain.languageVersion.set(JavaLanguageVersion.of(21))
     }
@@ -115,6 +91,30 @@ subprojects {
             scm {
                 url.set("https://github.com/theSimpleCloud/simplecloud-controller.git")
                 connection.set("git:git@github.com:theSimpleCloud/simplecloud-controller.git")
+            }
+        }
+    }
+
+    publishing {
+        repositories {
+            maven {
+                name = "simplecloud"
+                url = uri(determineRepositoryUrl())
+                credentials {
+                    username = System.getenv("SIMPLECLOUD_USERNAME")
+                        ?: (project.findProperty("simplecloudUsername") as? String)
+                    password = System.getenv("SIMPLECLOUD_PASSWORD")
+                        ?: (project.findProperty("simplecloudPassword") as? String)
+                }
+                authentication {
+                    create<BasicAuthentication>("basic")
+                }
+            }
+        }
+
+        publications {
+            create<MavenPublication>("mavenJava") {
+                from(components["java"])
             }
         }
     }
