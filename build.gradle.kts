@@ -17,11 +17,6 @@ allprojects {
         maven("https://buf.build/gen/maven")
         maven("https://repo.simplecloud.app/snapshots")
     }
-
-    tasks.withType<JavaCompile> {
-        options.isFork = true
-        options.isIncremental = true
-    }
 }
 
 subprojects {
@@ -58,7 +53,7 @@ subprojects {
             }
 
             create<MavenPublication>("mavenJava") {
-                artifact(tasks.named("shadowJar"))
+                from(components["java"])
             }
         }
     }
@@ -77,14 +72,21 @@ subprojects {
         }
     }
 
-    tasks.named("shadowJar", ShadowJar::class) {
-        mergeServiceFiles()
-        archiveFileName.set("${project.name}.jar")
-        archiveClassifier.set("")
-    }
+    tasks {
+        withType<JavaCompile> {
+            options.isFork = true
+            options.isIncremental = true
+        }
 
-    tasks.test {
-        useJUnitPlatform()
+        named("shadowJar", ShadowJar::class) {
+            mergeServiceFiles()
+
+            archiveFileName.set("${project.name}.jar")
+        }
+
+        test {
+            useJUnitPlatform()
+        }
     }
 
     centralPortal {
