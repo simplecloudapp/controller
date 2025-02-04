@@ -70,7 +70,7 @@ subprojects {
         pom {
             name.set("SimpleCloud controller")
             description.set("The heart of SimpleCloud v3")
-            url.set("https://github.com/theSimpleCloud/simplecloud-controller")
+            url.set("https://github.com/simplecloudapp/simplecloud-controller")
 
             developers {
                 developer {
@@ -89,8 +89,8 @@ subprojects {
                 }
             }
             scm {
-                url.set("https://github.com/theSimpleCloud/simplecloud-controller.git")
-                connection.set("git:git@github.com:theSimpleCloud/simplecloud-controller.git")
+                url.set("https://github.com/simplecloudapp/simplecloud-controller.git")
+                connection.set("git:git@github.com:simplecloudapp/simplecloud-controller.git")
             }
         }
     }
