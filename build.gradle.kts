@@ -48,10 +48,6 @@ subprojects {
         }
 
         publications {
-            if (project.name == "controller-runtime") {
-                return@publications
-            }
-
             create<MavenPublication>("mavenJava") {
                 from(components["java"])
             }
