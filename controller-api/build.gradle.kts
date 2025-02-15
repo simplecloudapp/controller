@@ -6,6 +6,7 @@ dependencies {
 
 tasks.named("shadowJar", ShadowJar::class) {
     mergeServiceFiles()
+
     relocate("com", "app.simplecloud.external.com")
     relocate("google", "app.simplecloud.external.google")
     relocate("io", "app.simplecloud.external.io")
@@ -13,5 +14,6 @@ tasks.named("shadowJar", ShadowJar::class) {
     relocate("javax", "app.simplecloud.external.javax")
     relocate("android", "app.simplecloud.external.android")
     relocate("build.buf.gen.simplecloud", "app.simplecloud.buf")
+
     archiveFileName.set("${project.name}.jar")
 }
