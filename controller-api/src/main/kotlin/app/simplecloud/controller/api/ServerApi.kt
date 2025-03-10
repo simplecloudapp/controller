@@ -108,6 +108,12 @@ interface ServerApi {
         ): CompletableFuture<List<Server>>
 
         /**
+         * @param server the [Server] to update.
+         * @return the updated [Server].
+         */
+        fun updateServer(server: Server): CompletableFuture<Server>
+
+        /**
          * @param id the id of the server.
          * @param state the new state of the server.
          * @return a [CompletableFuture] with the updated [Server].
@@ -217,6 +223,12 @@ interface ServerApi {
             timeoutSeconds: Int,
             stopCause: ServerStopCause = ServerStopCause.API_STOP
         ): List<Server>
+
+        /**
+         * @param server the [Server] to update.
+         * @return the updated [Server].
+         */
+        suspend fun updateServer(server: Server): Server
 
         /**
          * @param id the id of the server.

@@ -120,6 +120,14 @@ class ServerApiCoroutineImpl(
         }
     }
 
+    override suspend fun updateServer(server: Server): Server {
+        return Server.fromDefinition(
+            serverServiceStub.updateServer(updateServerRequest {
+                this.server = server.toDefinition()
+            })
+        )
+    }
+
     override suspend fun updateServerState(id: String, state: ServerState): Server {
         return Server.fromDefinition(
             serverServiceStub.updateServerState(
