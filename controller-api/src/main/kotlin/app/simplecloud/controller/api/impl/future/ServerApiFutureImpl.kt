@@ -133,6 +133,16 @@ class ServerApiFutureImpl(
         }
     }
 
+    override fun updateServer(server: Server): CompletableFuture<Server> {
+        return serverServiceStub.updateServer(
+            UpdateServerRequest.newBuilder()
+                .setServer(server.toDefinition())
+                .build()
+        ).toCompletable().thenApply {
+            return@thenApply Server.fromDefinition(it)
+        }
+    }
+
     override fun updateServerState(id: String, state: ServerState): CompletableFuture<Server> {
         return serverServiceStub.updateServerState(
             UpdateServerStateRequest.newBuilder()
