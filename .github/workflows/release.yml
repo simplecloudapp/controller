@@ -97,25 +97,13 @@ jobs:
 
       - name: Publish to SimpleCloud Repository
         run: |
-          if [[ "${{ steps.version.outputs.CHANNEL }}" == "release" ]]; then
-            export GPG_TTY=$(tty)
-            export GRADLE_OPTS="-Dorg.gradle.daemon=false"
-            ./gradlew --no-daemon --parallel --build-cache publishMavenJavaPublicationToSimplecloudRepository \
-              -PreleaseType=${{ steps.version.outputs.CHANNEL }} \
-              -Pversion=${{ steps.version.outputs.VERSION }} \
-              -Psigning.gnupg.keyName="${{ secrets.GPG_PRIVATE_KEY }}" \
-              -Psigning.gnupg.passphrase="${{ secrets.GPG_PASSPHRASE }}"
-          else
-            ./gradlew --parallel --build-cache publishMavenJavaPublicationToSimplecloudRepository \
-              -PreleaseType=${{ steps.version.outputs.CHANNEL }} \
-              -Pversion=${{ steps.version.outputs.VERSION }}
-          fi
+          ./gradlew --parallel --build-cache publishMavenJavaPublicationToSimplecloudRepository \
+            -PreleaseType=${{ steps.version.outputs.CHANNEL }} \
+            -Pversion=${{ steps.version.outputs.VERSION }}
         env:
           COMMIT_HASH: ${{ env.COMMIT_HASH }}
           SIMPLECLOUD_USERNAME: ${{ secrets.SIMPLECLOUD_USERNAME }}
           SIMPLECLOUD_PASSWORD: ${{ secrets.SIMPLECLOUD_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_PRIVATE_KEY }}
-          ORG_GRADLE_PROJECT_signingPassphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Prepare Artifacts
         run: |
