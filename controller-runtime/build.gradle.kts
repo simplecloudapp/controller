@@ -8,13 +8,15 @@ dependencies {
     api(project(":controller-shared"))
     api(libs.bundles.jooq)
     api(libs.sqlite.jdbc)
-    jooqCodegen(libs.jooq.meta.extensions)
+
     implementation(libs.simplecloud.metrics)
     implementation(libs.bundles.log4j)
     implementation(libs.clikt)
     implementation(libs.spring.crypto)
     implementation(libs.spotify.completablefutures)
     implementation(libs.envoy.controlplane)
+
+    jooqCodegen(libs.jooq.meta.extensions)
 }
 
 application {
